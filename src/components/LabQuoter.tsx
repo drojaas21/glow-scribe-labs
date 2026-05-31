@@ -38,7 +38,8 @@ export function LabQuoter() {
     add(item);
   };
 
-  const totalFonasa = cart.reduce((s, e) => s + (e.fonasa_a ?? e.particular), 0);
+  const totalFonasaA = cart.reduce((s, e) => s + (e.fonasa_a ?? e.particular), 0);
+  const totalFonasaBcd = cart.reduce((s, e) => s + (e.fonasa_bcd ?? e.particular), 0);
   const totalPart = cart.reduce((s, e) => s + e.particular, 0);
 
 
@@ -120,6 +121,7 @@ export function LabQuoter() {
                   <p className="text-sm font-semibold leading-snug text-foreground">{e.name}</p>
                   <div className="mt-1 flex flex-wrap gap-3 text-[11px] text-muted-foreground">
                     <span>FONASA A <b className="text-foreground">{e.fonasa_a != null ? formatCLP(e.fonasa_a) : "—"}</b></span>
+                    <span>FONASA B/C/D <b className="text-foreground">{e.fonasa_bcd != null ? formatCLP(e.fonasa_bcd) : "—"}</b></span>
                     <span>Particular <b className="text-foreground">{formatCLP(e.particular)}</b></span>
                     {e.obs && (
                       <span className={`rounded px-1.5 font-semibold ${
@@ -180,8 +182,12 @@ export function LabQuoter() {
 
           <div className="mt-4 space-y-2">
             <div className="flex items-center justify-between border-b border-dashed border-border pb-2 text-sm">
-              <span className="text-muted-foreground">Total FONASA</span>
-              <span className="font-semibold text-foreground">{formatCLP(totalFonasa)}</span>
+              <span className="text-muted-foreground">Total FONASA A</span>
+              <span className="font-semibold text-foreground">{formatCLP(totalFonasaA)}</span>
+            </div>
+            <div className="flex items-center justify-between border-b border-dashed border-border pb-2 text-sm">
+              <span className="text-muted-foreground">Total FONASA B / C / D</span>
+              <span className="font-semibold text-foreground">{formatCLP(totalFonasaBcd)}</span>
             </div>
           </div>
           <div className="mt-3 rounded-xl bg-gradient-brand px-4 py-3.5 text-primary-foreground shadow-[var(--shadow-lift)]">

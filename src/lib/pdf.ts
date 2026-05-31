@@ -55,6 +55,7 @@ export function generateExamPDF(args: {
   exam: Exam;
   category: ExamCategory;
   convenio: Convenio;
+  prevision: string;
   copagoBase: number;
   copagoFinal: number;
   descuento: number;
@@ -65,24 +66,24 @@ export function generateExamPDF(args: {
   recommendations: string;
 }) {
   const doc = new jsPDF();
-  header(doc, "Cotización de Exámenes de Imagenología");
+  header(doc, "Cotización de Examen de Imagenología");
   let y = patientBox(doc, 38, args.patientName, args.patientRut);
 
   autoTable(doc, {
     startY: y,
-    head: [["Detalle", "Información"]],
+    head: [["Detalle de la cotización", ""]],
     body: [
-      ["Categoría", categoryMeta[args.category].label],
+      ["Tipo de examen", categoryMeta[args.category].label],
       ["Examen", args.exam.name],
-      ["Convenio", convenioMeta[args.convenio]],
-      ["Copago base", formatCLP(args.copagoBase)],
-      ["Descuento convenio", `${args.porcentaje}%  (-${formatCLP(args.descuento)})`],
-      ["Copago final", formatCLP(args.copagoFinal)],
+      ["Previsión", args.prevision],
+      ["Convenio comercial", convenioMeta[args.convenio]],
+      ["Copago según previsión", formatCLP(args.copagoBase)],
+      ["Descuento por convenio", args.porcentaje > 0 ? `${args.porcentaje}%  (-${formatCLP(args.descuento)})` : "Sin descuento"],
     ],
     theme: "striped",
     headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold" },
-    columnStyles: { 0: { fontStyle: "bold", cellWidth: 60, textColor: BRAND_DARK } },
-    styles: { fontSize: 10, cellPadding: 3 },
+    columnStyles: { 0: { fontStyle: "bold", cellWidth: 70, textColor: BRAND_DARK } },
+    styles: { fontSize: 10, cellPadding: 3.5 },
   });
 
   // total box

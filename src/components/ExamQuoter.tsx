@@ -24,7 +24,7 @@ import {
   type ExamCategory,
   type Convenio,
 } from "@/data/catalog";
-import { formatCLP, sanitizeNumber, normalize } from "@/lib/format";
+import { formatCLP, normalize } from "@/lib/format";
 import { generateExamPDF } from "@/lib/pdf";
 import { categoryRecommendations } from "@/data/recommendations";
 import { Landmark, Building2, ShieldCheck, Users, Lightbulb } from "lucide-react";
@@ -47,7 +47,7 @@ export function ExamQuoter() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Selected>(null);
   const [convenio, setConvenio] = useState<Convenio>("particular");
-  const [copago, setCopago] = useState("");
+  const [prevision, setPrevision] = useState<"particular" | "fa" | "fbcd">("particular");
   const [patientName, setPatientName] = useState("");
   const [patientRut, setPatientRut] = useState("");
   const [recommendations, setRecommendations] = useState("");
@@ -76,15 +76,22 @@ export function ExamQuoter() {
 
   const calc = useMemo(() => {
     if (!selected || !selectedExam) return null;
-    const base = parseInt(sanitizeNumber(copago)) || 0;
-    const pct = selectedExam.particular ? 0 : discountMatrix[selected.category]?.[convenio] ?? 0;
+    const base =
+      prevision === "particular"
+        ? selectedExam.part
+        : prevision === "fa"
+        ? selectedExam.fa
+        : selectedExam.fbcd;
+    const pct = discountMatrix[selected.category]?.[convenio] ?? 0;
     const descuento = Math.round(base * (pct / 100));
     const copagoFinal = Math.round(base - descuento);
-    const totalBoleta = Math.round(selectedExam.part - descuento);
-    return { base, pct, descuento, copagoFinal, totalBoleta };
-  }, [selected, selectedExam, copago, convenio]);
+    return { base, pct, descuento, copagoFinal, totalBoleta: copagoFinal };
+  }, [selected, selectedExam, prevision, convenio]);
 
-  const canPDF = !!(selected && calc && calc.base > 0);
+  const canPDF = !!(selected && calc);
+
+  const previsionLabel =
+    prevision === "particular" ? "Particular" : prevision === "fa" ? "FONASA A" : "FONASA B / C / D";
 
   const autoRecs = selected ? categoryRecommendations[selected.category] : [];
 
@@ -98,6 +105,7 @@ export function ExamQuoter() {
       exam: selectedExam,
       category: selected.category,
       convenio,
+      prevision: previsionLabel,
       copagoBase: calc.base,
       copagoFinal: calc.copagoFinal,
       descuento: calc.descuento,
@@ -209,9 +217,19 @@ export function ExamQuoter() {
               {selectedExam ? selectedExam.name : "Ninguno"}
             </p>
             {selectedExam && (
-              <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-                <span>Particular <b className="text-foreground">{formatCLP(selectedExam.part)}</b></span>
-                <span>FONASA A <b className="text-foreground">{formatCLP(selectedExam.fa)}</b></span>
+              <div className="mt-2 grid grid-cols-3 gap-2 text-center text-[11px]">
+                <div className="rounded-lg bg-background px-2 py-1.5">
+                  <p className="text-muted-foreground">Particular</p>
+                  <p className="font-bold text-foreground">{formatCLP(selectedExam.part)}</p>
+                </div>
+                <div className="rounded-lg bg-background px-2 py-1.5">
+                  <p className="text-muted-foreground">FONASA A</p>
+                  <p className="font-bold text-foreground">{formatCLP(selectedExam.fa)}</p>
+                </div>
+                <div className="rounded-lg bg-background px-2 py-1.5">
+                  <p className="text-muted-foreground">FONASA B/C/D</p>
+                  <p className="font-bold text-foreground">{formatCLP(selectedExam.fbcd)}</p>
+                </div>
               </div>
             )}
           </div>
@@ -249,19 +267,38 @@ export function ExamQuoter() {
             )}
           </div>
 
-          <label className="mt-4 block">
-            <span className="mb-1 block text-xs font-semibold text-foreground">Copago base de la previsión</span>
-            <input
-              inputMode="numeric"
-              value={copago}
-              onChange={(e) => setCopago(e.target.value)}
-              placeholder="$0"
-              className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
-            />
-          </label>
+          <div className="mt-4">
+            <span className="mb-1.5 block text-xs font-semibold text-foreground">Previsión del paciente</span>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { key: "particular", label: "Particular" },
+                { key: "fa", label: "FONASA A" },
+                { key: "fbcd", label: "FONASA B/C/D" },
+              ] as const).map((p) => {
+                const isSel = prevision === p.key;
+                return (
+                  <button
+                    key={p.key}
+                    onClick={() => setPrevision(p.key)}
+                    className={`rounded-xl border px-2 py-2.5 text-center text-[11px] font-semibold transition-all ${
+                      isSel
+                        ? "border-transparent bg-gradient-brand text-primary-foreground shadow-[var(--shadow-lift)]"
+                        : "border-border bg-background text-foreground hover:border-primary/40"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              El copago se calcula automáticamente según la previsión seleccionada.
+            </p>
+          </div>
 
           {/* results */}
           <div className="mt-4 space-y-2">
+            <ResultRow label={`Copago base (${previsionLabel})`} value={formatCLP(calc?.base ?? 0)} />
             <ResultRow label="Descuento convenio" value={calc ? `${calc.pct}%` : "0%"} />
             <ResultRow label="Monto descontado" value={formatCLP(calc?.descuento ?? 0)} />
             <ResultRow label="Copago final" value={formatCLP(calc?.copagoFinal ?? 0)} />
