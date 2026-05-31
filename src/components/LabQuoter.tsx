@@ -121,6 +121,7 @@ export function LabQuoter() {
                   <p className="text-sm font-semibold leading-snug text-foreground">{e.name}</p>
                   <div className="mt-1 flex flex-wrap gap-3 text-[11px] text-muted-foreground">
                     <span>FONASA A <b className="text-foreground">{e.fonasa_a != null ? formatCLP(e.fonasa_a) : "—"}</b></span>
+                    <span>FONASA B/C/D <b className="text-foreground">{e.fonasa_bcd != null ? formatCLP(e.fonasa_bcd) : "—"}</b></span>
                     <span>Particular <b className="text-foreground">{formatCLP(e.particular)}</b></span>
                     {e.obs && (
                       <span className={`rounded px-1.5 font-semibold ${
