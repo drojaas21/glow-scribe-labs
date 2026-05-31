@@ -121,7 +121,15 @@ export function LabQuoter() {
                   <div className="mt-1 flex flex-wrap gap-3 text-[11px] text-muted-foreground">
                     <span>FONASA A <b className="text-foreground">{e.fonasa_a != null ? formatCLP(e.fonasa_a) : "—"}</b></span>
                     <span>Particular <b className="text-foreground">{formatCLP(e.particular)}</b></span>
-                    {e.obs && <span className="rounded bg-accent/20 px-1.5 text-accent-foreground">{e.obs}</span>}
+                    {e.obs && (
+                      <span className={`rounded px-1.5 font-semibold ${
+                        e.obs.includes("PARTICULAR")
+                          ? "bg-destructive/15 text-destructive"
+                          : e.obs.includes("BOLETA")
+                          ? "bg-amber-500/20 text-amber-700 dark:text-amber-400"
+                          : "bg-accent/20 text-accent-foreground"
+                      }`}>{e.obs}</span>
+                    )}
                   </div>
                 </div>
                 <button
