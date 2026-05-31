@@ -105,6 +105,7 @@ export function ExamQuoter() {
       exam: selectedExam,
       category: selected.category,
       convenio,
+      prevision: previsionLabel,
       copagoBase: calc.base,
       copagoFinal: calc.copagoFinal,
       descuento: calc.descuento,
