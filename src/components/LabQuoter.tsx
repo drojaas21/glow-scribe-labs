@@ -2,10 +2,8 @@ import { useMemo, useState } from "react";
 import {
   Search, X, Plus, Trash2, FileDown, FlaskConical, Check,
   Layers, AlertCircle, ChevronDown,
-  type LucideIcon,
 } from "lucide-react";
-import { Landmark, Building2, ShieldCheck, Users } from "lucide-react";
-import { labDatabase, type LabExam, convenioMeta, type Convenio } from "@/data/catalog";
+import { labDatabase, type LabExam } from "@/data/catalog";
 import { labProfiles, type LabProfile } from "@/data/profiles";
 import { soloParticularCodes } from "@/data/soloParticular";
 import { formatCLP, normalize } from "@/lib/format";
@@ -23,17 +21,18 @@ function isBlocked(e: LabExam): boolean {
   return blockedCodes.has(e.code) || e.obs.toUpperCase().includes("NO SE REALIZA");
 }
 
-const convenioIcons: Record<Convenio, LucideIcon> = {
-  particular: ShieldCheck,
-  banco: Landmark,
-  caja: Building2,
-  araucana: Users,
-};
+type Prevision = "particular" | "fa" | "fbcd";
+
+const previsionOptions: { key: Prevision; label: string }[] = [
+  { key: "particular", label: "Particular" },
+  { key: "fa", label: "FONASA A" },
+  { key: "fbcd", label: "FONASA B/C/D" },
+];
 
 export function LabQuoter() {
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<LabExam[]>([]);
-  const [convenio, setConvenio] = useState<Convenio>("particular");
+  const [prevision, setPrevision] = useState<Prevision>("particular");
   const [patientName, setPatientName] = useState("");
   const [patientRut, setPatientRut] = useState("");
   const [observations, setObservations] = useState("");
@@ -83,6 +82,11 @@ export function LabQuoter() {
   const totalFonasaA = cart.reduce((s, e) => s + (e.fonasa_a ?? e.particular), 0);
   const totalFonasaBcd = cart.reduce((s, e) => s + (e.fonasa_bcd ?? e.particular), 0);
   const totalPart = cart.reduce((s, e) => s + e.particular, 0);
+
+  const selectedTotal =
+    prevision === "fa" ? totalFonasaA : prevision === "fbcd" ? totalFonasaBcd : totalPart;
+  const previsionLabel =
+    prevision === "fa" ? "FONASA A" : prevision === "fbcd" ? "FONASA B/C/D" : "Particular";
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
@@ -168,23 +172,23 @@ export function LabQuoter() {
       {/* ── RIGHT column ── */}
       <div className="min-w-0 space-y-5">
 
-        {/* ── Convenio ── */}
+        {/* ── Previsión ── */}
         <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">Convenio</h3>
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            {(Object.keys(convenioMeta) as Convenio[]).map((c) => {
-              const Icon = convenioIcons[c];
-              const isSel = convenio === c;
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">Previsión del paciente</h3>
+          <div className="grid grid-cols-3 gap-2">
+            {previsionOptions.map((p) => {
+              const isSel = prevision === p.key;
               return (
                 <button
-                  key={c}
-                  onClick={() => setConvenio(c)}
-                  className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-all ${
-                    isSel ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-border bg-background hover:border-primary/40"
+                  key={p.key}
+                  onClick={() => setPrevision(p.key)}
+                  className={`rounded-xl border px-2 py-2.5 text-center text-[11px] font-semibold transition-all ${
+                    isSel
+                      ? "border-transparent bg-gradient-brand text-primary-foreground shadow-[var(--shadow-lift)]"
+                      : "border-border bg-background text-foreground hover:border-primary/40"
                   }`}
                 >
-                  <Icon className={`h-5 w-5 ${isSel ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className="text-[10px] font-semibold leading-tight text-foreground">{convenioMeta[c]}</span>
+                  {p.label}
                 </button>
               );
             })}
@@ -245,25 +249,36 @@ export function LabQuoter() {
             </div>
           )}
 
-          {/* Three totals */}
+          {/* Three reference totals */}
           <div className="mt-4 grid grid-cols-3 gap-2">
-            <div className="rounded-xl border bg-secondary/40 p-2.5 text-center">
-              <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">FONASA A</p>
-              <p className="mt-1 text-sm font-bold text-foreground">{formatCLP(totalFonasaA)}</p>
-            </div>
-            <div className="rounded-xl border bg-secondary/40 p-2.5 text-center">
-              <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">FONASA B/C/D</p>
-              <p className="mt-1 text-sm font-bold text-foreground">{formatCLP(totalFonasaBcd)}</p>
-            </div>
-            <div className="rounded-xl border border-primary/30 bg-primary/5 p-2.5 text-center">
-              <p className="text-[9px] font-bold uppercase tracking-wide text-primary">PARTICULAR</p>
-              <p className="mt-1 text-sm font-bold text-foreground">{formatCLP(totalPart)}</p>
-            </div>
+            {[
+              { key: "fa" as const, label: "FONASA A", value: totalFonasaA },
+              { key: "fbcd" as const, label: "FONASA B/C/D", value: totalFonasaBcd },
+              { key: "particular" as const, label: "PARTICULAR", value: totalPart },
+            ].map((t) => {
+              const active = prevision === t.key;
+              return (
+                <div
+                  key={t.key}
+                  className={`rounded-xl border p-2.5 text-center transition-all ${
+                    active
+                      ? "border-primary/40 bg-primary/5"
+                      : "border-border bg-secondary/40"
+                  }`}
+                >
+                  <p className={`text-[9px] font-bold uppercase tracking-wide ${active ? "text-primary" : "text-muted-foreground"}`}>{t.label}</p>
+                  <p className="mt-1 text-sm font-bold text-foreground">{formatCLP(t.value)}</p>
+                </div>
+              );
+            })}
           </div>
           <div className="mt-3 rounded-xl bg-gradient-brand px-4 py-4 text-primary-foreground shadow-[var(--shadow-lift)]">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-medium opacity-90">Total</span>
-              <span className="text-3xl font-bold tracking-tight">{formatCLP(totalPart)}</span>
+              <div>
+                <span className="text-sm font-medium opacity-90">Total a pagar</span>
+                <p className="text-[10px] opacity-70">{previsionLabel}</p>
+              </div>
+              <span className="text-3xl font-bold tracking-tight">{formatCLP(selectedTotal)}</span>
             </div>
           </div>
         </div>
@@ -296,7 +311,7 @@ export function LabQuoter() {
           />
 
           <button
-            onClick={() => cart.length && generateLabPDF({ items: cart, convenio, patientName, patientRut, observations: observations.trim() })}
+            onClick={() => cart.length && generateLabPDF({ items: cart, prevision: previsionLabel, selectedTotal, patientName, patientRut, observations: observations.trim() })}
             disabled={cart.length === 0}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >

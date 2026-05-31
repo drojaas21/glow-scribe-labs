@@ -175,7 +175,8 @@ export function generateExamPDF(args: {
 
 export function generateLabPDF(args: {
   items: LabExam[];
-  convenio: Convenio;
+  prevision: string;
+  selectedTotal: number;
   patientName: string;
   patientRut: string;
   observations: string;
@@ -184,17 +185,17 @@ export function generateLabPDF(args: {
   header(doc, "Cotización de Exámenes de Laboratorio");
   let y = patientBox(doc, 38, args.patientName, args.patientRut);
 
-  // Info row: convenio
+  // Info row: previsión
   doc.setFillColor(241, 247, 252);
   doc.setDrawColor(...BRAND);
   doc.roundedRect(15, y, 180, 12, 2, 2, "FD");
   doc.setTextColor(...BRAND_DARK);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.5);
-  doc.text("Convenio:", 20, y + 8);
+  doc.text("Previsión:", 20, y + 8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(40, 40, 40);
-  doc.text(convenioMeta[args.convenio], 48, y + 8);
+  doc.text(args.prevision, 48, y + 8);
   y += 18;
 
   const totalFonasaA = args.items.reduce((s, e) => s + (e.fonasa_a ?? e.particular), 0);
@@ -225,7 +226,7 @@ export function generateLabPDF(args: {
   // @ts-expect-error lastAutoTable injected by plugin
   let yy = doc.lastAutoTable.finalY + 8;
 
-  // Three totals side by side
+  // Three reference totals
   const colW = 58;
   const totals = [
     { label: "FONASA A", value: formatCLP(totalFonasaA) },
@@ -234,29 +235,28 @@ export function generateLabPDF(args: {
   ];
   totals.forEach((t, i) => {
     const x = 15 + i * (colW + 2);
-    const isLast = i === 2;
-    doc.setFillColor(isLast ? 25 : 241, isLast ? 96 : 247, isLast ? 165 : 252);
+    doc.setFillColor(241, 247, 252);
     doc.setDrawColor(...BRAND);
-    doc.roundedRect(x, yy, colW, 22, 2, 2, isLast ? "F" : "FD");
+    doc.roundedRect(x, yy, colW, 22, 2, 2, "FD");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7);
-    doc.setTextColor(isLast ? 255 : 80, isLast ? 255 : 80, isLast ? 255 : 80);
+    doc.setTextColor(80, 80, 80);
     doc.text(t.label, x + colW / 2, yy + 7, { align: "center" });
     doc.setFontSize(11);
     doc.text(t.value, x + colW / 2, yy + 17, { align: "center" });
   });
   yy += 30;
 
-  // Big total box
+  // Big total box — shows selected prevision total
   doc.setFillColor(...BRAND_DARK);
   doc.roundedRect(15, yy, 180, 22, 2, 2, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text("TOTAL A PAGAR (PARTICULAR)", 22, yy + 8);
+  doc.text(`TOTAL A PAGAR (${args.prevision.toUpperCase()})`, 22, yy + 8);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
-  doc.text(formatCLP(totalPart), 188, yy + 16, { align: "right" });
+  doc.text(formatCLP(args.selectedTotal), 188, yy + 16, { align: "right" });
   yy += 32;
 
   yy = observationsBox(doc, yy, args.observations);
