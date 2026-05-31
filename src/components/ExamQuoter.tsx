@@ -76,15 +76,22 @@ export function ExamQuoter() {
 
   const calc = useMemo(() => {
     if (!selected || !selectedExam) return null;
-    const base = parseInt(sanitizeNumber(copago)) || 0;
-    const pct = selectedExam.particular ? 0 : discountMatrix[selected.category]?.[convenio] ?? 0;
+    const base =
+      prevision === "particular"
+        ? selectedExam.part
+        : prevision === "fa"
+        ? selectedExam.fa
+        : selectedExam.fbcd;
+    const pct = discountMatrix[selected.category]?.[convenio] ?? 0;
     const descuento = Math.round(base * (pct / 100));
     const copagoFinal = Math.round(base - descuento);
-    const totalBoleta = Math.round(selectedExam.part - descuento);
-    return { base, pct, descuento, copagoFinal, totalBoleta };
-  }, [selected, selectedExam, copago, convenio]);
+    return { base, pct, descuento, copagoFinal, totalBoleta: copagoFinal };
+  }, [selected, selectedExam, prevision, convenio]);
 
-  const canPDF = !!(selected && calc && calc.base > 0);
+  const canPDF = !!(selected && calc);
+
+  const previsionLabel =
+    prevision === "particular" ? "Particular" : prevision === "fa" ? "FONASA A" : "FONASA B / C / D";
 
   const autoRecs = selected ? categoryRecommendations[selected.category] : [];
 
