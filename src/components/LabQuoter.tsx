@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { Search, X, Plus, Trash2, FileDown, FlaskConical, Check, Layers } from "lucide-react";
+import { Search, X, Plus, Trash2, FileDown, FlaskConical, Check, Layers, Clock, Info, AlertCircle } from "lucide-react";
 import { labDatabase, type LabExam } from "@/data/catalog";
 import { labProfiles, type LabProfile } from "@/data/profiles";
+import { preparationNotes, scheduleInfo, bloodSampleNote } from "@/data/preparation";
 import { formatCLP, normalize } from "@/lib/format";
 import { generateLabPDF } from "@/lib/pdf";
 
@@ -16,7 +17,7 @@ export function LabQuoter() {
     const q = normalize(query);
     return labDatabase.filter(
       (e) => normalize(e.name).includes(q) || e.code.includes(query.trim())
-    ).slice(0, 60);
+    ).slice(0, 80);
   }, [query]);
 
   const add = (e: LabExam) => {
@@ -26,15 +27,15 @@ export function LabQuoter() {
   const remove = (code: string) => setCart((p) => p.filter((c) => c.code !== code));
 
   const addProfile = (p: LabProfile) => {
-    const item: LabExam =
-      (p.code && labDatabase.find((e) => e.code === p.code)) || {
-        code: `PERFIL-${p.name}`,
-        name: `${p.name} (${p.items.join(", ")})`,
-        fonasa_bcd: null,
-        fonasa_a: p.fonasa_a,
-        particular: p.particular ?? 0,
-        obs: p.code ? "" : "PERFIL · CONSULTAR",
-      };
+    const dbEntry = p.code ? labDatabase.find((e) => e.code === p.code) : undefined;
+    const item: LabExam = dbEntry || {
+      code: `PERFIL-${p.name}`,
+      name: `${p.name} (${p.items.map((it) => it.name).join(", ")})`,
+      fonasa_bcd: null,
+      fonasa_a: p.fonasa_a,
+      particular: p.particular ?? 0,
+      obs: p.code ? "" : "PERFIL · CONSULTAR",
+    };
     add(item);
   };
 
@@ -42,113 +43,128 @@ export function LabQuoter() {
   const totalFonasaBcd = cart.reduce((s, e) => s + (e.fonasa_bcd ?? e.particular), 0);
   const totalPart = cart.reduce((s, e) => s + e.particular, 0);
 
+  const obsColor = (obs: string) => {
+    if (!obs) return "";
+    const o = obs.toUpperCase();
+    if (o.includes("NO SE REALIZA")) return "bg-slate-200/60 text-slate-600 dark:bg-slate-700/60 dark:text-slate-300";
+    if (o.includes("PARTICULAR")) return "bg-destructive/15 text-destructive";
+    if (o.includes("BOLETA")) return "bg-amber-500/20 text-amber-700 dark:text-amber-400";
+    return "bg-accent/20 text-accent-foreground";
+  };
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
       <div className="space-y-5">
-      <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
-        <h3 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-foreground">
-          <Layers className="h-4 w-4 text-primary" /> Perfiles destacados
-        </h3>
-        <p className="mb-3 text-xs text-muted-foreground">Agrupaciones frecuentes de exámenes. Haz clic para agregarlas a la cotización.</p>
-        <div className="grid gap-2.5 sm:grid-cols-2">
-          {labProfiles.map((p) => {
-            const inCart = cart.some((c) => c.code === (p.code ?? `PERFIL-${p.name}`));
-            return (
-              <div
-                key={p.name}
-                className="overflow-hidden rounded-xl border border-border bg-background"
-              >
-                <div className="flex items-center justify-between gap-2 px-3 py-2" style={{ backgroundColor: p.tint }}>
-                  <span className="text-xs font-bold text-white drop-shadow">{p.name}</span>
+        <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
+          <h3 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-foreground">
+            <Layers className="h-4 w-4 text-primary" /> Perfiles destacados
+          </h3>
+          <p className="mb-3 text-xs text-muted-foreground">Agrupaciones frecuentes de exámenes. Haz clic para agregarlas a la cotización.</p>
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            {labProfiles.map((p) => {
+              const cartKey = p.code ?? `PERFIL-${p.name}`;
+              const inCart = cart.some((c) => c.code === cartKey);
+              return (
+                <div
+                  key={p.name}
+                  className="overflow-hidden rounded-xl border border-border bg-background"
+                >
+                  <div className="flex items-center justify-between gap-2 px-3 py-2" style={{ backgroundColor: p.tint }}>
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-white drop-shadow">{p.name}</span>
+                      {p.code && !p.code.startsWith("PERFIL") && (
+                        <span className="ml-1.5 rounded bg-white/20 px-1 py-0.5 font-mono text-[10px] text-white/90">{p.code}</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => addProfile(p)}
+                      disabled={inCart}
+                      className="shrink-0 flex items-center gap-1 rounded-md bg-white/25 px-2 py-1 text-[11px] font-semibold text-white backdrop-blur transition hover:bg-white/40 disabled:opacity-50"
+                    >
+                      {inCart ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                      {inCart ? "Agregado" : "Agregar"}
+                    </button>
+                  </div>
+                  <div className="px-3 py-2">
+                    <div className="flex flex-wrap gap-1">
+                      {p.items.map((it) => (
+                        <span key={it.name} className="inline-flex items-center gap-1 rounded bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground">
+                          {it.name}
+                          {it.code && (
+                            <span className="font-mono text-[9px] opacity-60">{it.code}</span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      {p.particular != null
+                        ? <>Particular <b className="text-foreground">{formatCLP(p.particular)}</b>{p.fonasa_a != null && <> · FONASA A <b className="text-foreground">{formatCLP(p.fonasa_a)}</b></>}</>
+                        : <span className="font-semibold text-primary">Valor a confirmar en atención</span>}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">Catálogo de laboratorio</h3>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar por código FONASA o nombre del examen…"
+              className="w-full rounded-xl border border-input bg-background py-3 pl-10 pr-10 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
+            />
+            {query && (
+              <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <p className="mt-3 px-1 text-xs text-muted-foreground">
+            {query.trim().length < 2 ? `Mostrando primeros 40 de ${labDatabase.length} exámenes` : `${results.length} resultado(s)`}
+          </p>
+
+          <div className="mt-2 max-h-[480px] space-y-2 overflow-y-auto pr-1">
+            {results.map((e) => {
+              const inCart = cart.some((c) => c.code === e.code);
+              const isNotAvailable = e.obs.toUpperCase().includes("NO SE REALIZA");
+              return (
+                <div key={e.code} className={`flex items-start gap-3 rounded-xl border border-border bg-background p-3 ${isNotAvailable ? "opacity-60" : ""}`}>
+                  <span className="mt-0.5 shrink-0 rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[10px] font-bold text-secondary-foreground">
+                    {e.code}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold leading-snug text-foreground">{e.name}</p>
+                    <div className="mt-1 flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+                      {!isNotAvailable && <>
+                        <span>FONASA A <b className="text-foreground">{e.fonasa_a != null ? formatCLP(e.fonasa_a) : "—"}</b></span>
+                        <span>FONASA B/C/D <b className="text-foreground">{e.fonasa_bcd != null ? formatCLP(e.fonasa_bcd) : "—"}</b></span>
+                        <span>Particular <b className="text-foreground">{e.particular > 0 ? formatCLP(e.particular) : "—"}</b></span>
+                      </>}
+                      {e.obs && (
+                        <span className={`rounded px-1.5 font-semibold ${obsColor(e.obs)}`}>{e.obs.trim()}</span>
+                      )}
+                    </div>
+                  </div>
                   <button
-                    onClick={() => addProfile(p)}
-                    disabled={inCart}
-                    className="flex items-center gap-1 rounded-md bg-white/25 px-2 py-1 text-[11px] font-semibold text-white backdrop-blur transition hover:bg-white/40 disabled:opacity-50"
+                    onClick={() => add(e)}
+                    disabled={inCart || isNotAvailable}
+                    className="shrink-0 rounded-lg bg-primary p-2 text-primary-foreground transition hover:opacity-90 disabled:opacity-30"
+                    title={isNotAvailable ? "No disponible" : "Agregar"}
                   >
-                    {inCart ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
-                    {inCart ? "Agregado" : "Agregar"}
+                    <Plus className="h-4 w-4" />
                   </button>
                 </div>
-                <div className="px-3 py-2">
-                  <div className="flex flex-wrap gap-1">
-                    {p.items.map((it) => (
-                      <span key={it} className="rounded bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground">{it}</span>
-                    ))}
-                  </div>
-                  <p className="mt-2 text-[11px] text-muted-foreground">
-                    {p.particular != null
-                      ? <>Particular <b className="text-foreground">{formatCLP(p.particular)}</b>{p.fonasa_a != null && <> · FONASA A <b className="text-foreground">{formatCLP(p.fonasa_a)}</b></>}</>
-                      : <span className="font-semibold text-primary">Valor a confirmar en atención</span>}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
-
-      <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
-        <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">Catálogo de laboratorio</h3>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar por código FONASA o nombre del examen…"
-            className="w-full rounded-xl border border-input bg-background py-3 pl-10 pr-10 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
-          />
-          {query && (
-            <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-
-        <p className="mt-3 px-1 text-xs text-muted-foreground">
-          {query.trim().length < 2 ? "Mostrando primeros 40 exámenes" : `${results.length} resultado(s)`}
-        </p>
-
-        <div className="mt-2 max-h-[480px] space-y-2 overflow-y-auto pr-1">
-          {results.map((e) => {
-            const inCart = cart.some((c) => c.code === e.code);
-            return (
-              <div key={e.code} className="flex items-start gap-3 rounded-xl border border-border bg-background p-3">
-                <span className="mt-0.5 shrink-0 rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[10px] font-bold text-secondary-foreground">
-                  {e.code}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold leading-snug text-foreground">{e.name}</p>
-                  <div className="mt-1 flex flex-wrap gap-3 text-[11px] text-muted-foreground">
-                    <span>FONASA A <b className="text-foreground">{e.fonasa_a != null ? formatCLP(e.fonasa_a) : "—"}</b></span>
-                    <span>FONASA B/C/D <b className="text-foreground">{e.fonasa_bcd != null ? formatCLP(e.fonasa_bcd) : "—"}</b></span>
-                    <span>Particular <b className="text-foreground">{formatCLP(e.particular)}</b></span>
-                    {e.obs && (
-                      <span className={`rounded px-1.5 font-semibold ${
-                        e.obs.includes("PARTICULAR")
-                          ? "bg-destructive/15 text-destructive"
-                          : e.obs.includes("BOLETA")
-                          ? "bg-amber-500/20 text-amber-700 dark:text-amber-400"
-                          : "bg-accent/20 text-accent-foreground"
-                      }`}>{e.obs}</span>
-                    )}
-                  </div>
-                </div>
-                <button
-                  onClick={() => add(e)}
-                  disabled={inCart}
-                  className="shrink-0 rounded-lg bg-primary p-2 text-primary-foreground transition hover:opacity-90 disabled:opacity-30"
-                  title="Agregar"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      </div>
-
 
       <div className="space-y-5">
         <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
@@ -170,7 +186,10 @@ export function LabQuoter() {
                 <div key={e.code} className="flex items-center gap-2 rounded-lg border border-border bg-background p-2.5">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-semibold text-foreground">{e.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{e.code} · {formatCLP(e.particular)}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {e.code} · {e.particular > 0 ? formatCLP(e.particular) : "Consultar"}
+                      {e.obs && <span className="ml-1 opacity-70">· {e.obs.trim()}</span>}
+                    </p>
                   </div>
                   <button onClick={() => remove(e.code)} className="text-muted-foreground hover:text-destructive">
                     <Trash2 className="h-4 w-4" />
@@ -212,6 +231,32 @@ export function LabQuoter() {
           >
             <FileDown className="h-4 w-4" /> Generar cotización PDF
           </button>
+
+          <div className="mt-4 rounded-xl border border-border bg-muted/40 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Clock className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <p className="text-[11px] font-semibold text-foreground">Horario de toma de muestras</p>
+            </div>
+            <div className="space-y-0.5 pl-5">
+              <p className="text-[10.5px] text-muted-foreground">{scheduleInfo.weekdays}</p>
+              <p className="text-[10.5px] text-muted-foreground">{scheduleInfo.saturday}</p>
+            </div>
+
+            {preparationNotes.map((n) => (
+              <div key={n.title} className="flex gap-2">
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                <div>
+                  <p className="text-[10.5px] font-semibold text-foreground">{n.title}</p>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">{n.text}</p>
+                </div>
+              </div>
+            ))}
+
+            <div className="flex gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-2.5 py-2">
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <p className="text-[10px] text-amber-800 dark:text-amber-300 leading-relaxed">{bloodSampleNote}</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

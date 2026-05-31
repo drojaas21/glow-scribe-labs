@@ -3,6 +3,7 @@ import autoTable from "jspdf-autotable";
 import { formatCLP } from "./format";
 import type { Exam, ExamCategory, Convenio, LabExam } from "@/data/catalog";
 import { categoryMeta, convenioMeta } from "@/data/catalog";
+import { preparationNotes, scheduleInfo, bloodSampleNote } from "@/data/preparation";
 
 const BRAND: [number, number, number] = [25, 96, 165];
 const BRAND_DARK: [number, number, number] = [20, 54, 93];
@@ -126,59 +127,89 @@ export function generateLabPDF(args: {
   header(doc, "Cotización de Exámenes de Laboratorio");
   const y = patientBox(doc, 38, args.patientName, args.patientRut);
 
-  const totalFonasa = args.items.reduce((s, e) => s + (e.fonasa_a ?? e.particular), 0);
+  const totalFonasaA = args.items.reduce((s, e) => s + (e.fonasa_a ?? e.particular), 0);
+  const totalFonasaBcd = args.items.reduce((s, e) => s + (e.fonasa_bcd ?? e.particular), 0);
   const totalPart = args.items.reduce((s, e) => s + e.particular, 0);
 
   autoTable(doc, {
     startY: y,
-    head: [["Código", "Examen", "Valor FONASA", "Particular"]],
+    head: [["Código", "Examen", "Obs.", "FONASA A", "FONASA B/C/D", "Particular"]],
     body: args.items.map((e) => [
       e.code,
       e.name,
+      e.obs?.trim() || "",
       e.fonasa_a != null ? formatCLP(e.fonasa_a) : "—",
-      formatCLP(e.particular),
+      e.fonasa_bcd != null ? formatCLP(e.fonasa_bcd) : "—",
+      e.particular > 0 ? formatCLP(e.particular) : "Consultar",
     ]),
     theme: "striped",
     headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold" },
     columnStyles: {
       0: { cellWidth: 22, fontStyle: "bold", textColor: BRAND_DARK },
-      2: { halign: "right", cellWidth: 30 },
-      3: { halign: "right", cellWidth: 28 },
+      2: { cellWidth: 22, fontSize: 7.5, textColor: [160, 100, 20] },
+      3: { halign: "right", cellWidth: 26 },
+      4: { halign: "right", cellWidth: 26 },
+      5: { halign: "right", cellWidth: 26 },
     },
-    styles: { fontSize: 8.5, cellPadding: 2.5 },
+    styles: { fontSize: 8, cellPadding: 2.5 },
   });
 
   // @ts-expect-error lastAutoTable injected by plugin
   let yy = doc.lastAutoTable.finalY + 8;
+
   doc.setFillColor(241, 247, 252);
   doc.setDrawColor(...BRAND);
-  doc.roundedRect(110, yy, 85, 22, 2, 2, "FD");
+  doc.roundedRect(110, yy, 85, 30, 2, 2, "FD");
   doc.setTextColor(...BRAND_DARK);
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
-  doc.text("Total FONASA", 115, yy + 8);
-  doc.text("Total Particular", 115, yy + 17);
+  doc.text("Total FONASA A", 115, yy + 8);
+  doc.text("Total FONASA B/C/D", 115, yy + 16);
+  doc.text("Total Particular", 115, yy + 24);
   doc.setFont("helvetica", "bold");
-  doc.text(formatCLP(totalFonasa), 190, yy + 8, { align: "right" });
-  doc.text(formatCLP(totalPart), 190, yy + 17, { align: "right" });
-  yy += 30;
+  doc.text(formatCLP(totalFonasaA), 190, yy + 8, { align: "right" });
+  doc.text(formatCLP(totalFonasaBcd), 190, yy + 16, { align: "right" });
+  doc.text(formatCLP(totalPart), 190, yy + 24, { align: "right" });
+  yy += 38;
 
+  // Blood sample note
+  doc.setFillColor(255, 251, 235);
+  doc.setDrawColor(245, 158, 11);
+  doc.roundedRect(15, yy, 180, 10, 2, 2, "FD");
+  doc.setTextColor(120, 75, 10);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  const noteLines = doc.splitTextToSize(bloodSampleNote, 174);
+  doc.text(noteLines, 18, yy + 6);
+  yy += 16;
+
+  // Preparation section
   doc.setTextColor(...BRAND_DARK);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9.5);
-  doc.text("Indicaciones generales", 15, yy);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(60, 60, 60);
+  doc.text("Indicaciones de preparación del paciente", 15, yy);
+  yy += 5;
+
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(8.5);
-  doc.text(
-    [
-      "• Atención: lunes a sábado.",
-      "• Toma de muestras: lunes a viernes de 8:00 a 12:00 hrs / sábado de 9:00 a 12:00 hrs.",
-      "• Ayuno requerido: 8 horas (máximo 12 horas) según el examen.",
-    ],
-    15,
-    yy + 6
-  );
+  doc.setTextColor(60, 60, 60);
+  doc.text("Horario de toma de muestras:", 15, yy + 5);
+  doc.setFont("helvetica", "normal");
+  doc.text(`• ${scheduleInfo.weekdays}`, 15, yy + 10);
+  doc.text(`• ${scheduleInfo.saturday}`, 15, yy + 15);
+  yy += 20;
+
+  for (const note of preparationNotes) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(60, 60, 60);
+    doc.text(`${note.title}:`, 15, yy);
+    doc.setFont("helvetica", "normal");
+    const lines = doc.splitTextToSize(`• ${note.text}`, 180);
+    doc.text(lines, 15, yy + 5);
+    yy += 5 + lines.length * 4.5;
+    if (yy > 265) break;
+  }
 
   footer(doc);
   doc.save("Cotizacion_Laboratorio.pdf");
