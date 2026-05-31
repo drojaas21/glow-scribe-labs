@@ -7,14 +7,6 @@ import { LabQuoter } from "@/components/LabQuoter";
 import { CashRegister } from "@/components/CashRegister";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "DiagnoPRO Temuco · Cotizador de Exámenes y Laboratorio" },
-      { name: "description", content: "Cotizador profesional de exámenes de imagenología, laboratorio y caja para DiagnoPRO Temuco. Calcula convenios, copagos y vuelto." },
-      { property: "og:title", content: "DiagnoPRO Temuco · Cotizador" },
-      { property: "og:description", content: "Cotiza exámenes de imagenología y laboratorio con convenios y genera PDF." },
-    ],
-  }),
   component: Index,
 });
 
