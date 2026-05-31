@@ -26,6 +26,15 @@ import {
 } from "@/data/catalog";
 import { formatCLP, sanitizeNumber, normalize } from "@/lib/format";
 import { generateExamPDF } from "@/lib/pdf";
+import { categoryRecommendations } from "@/data/recommendations";
+import { Landmark, Building2, ShieldCheck, Users, Lightbulb } from "lucide-react";
+
+const convenioIcons: Record<Convenio, LucideIcon> = {
+  particular: ShieldCheck,
+  banco: Landmark,
+  caja: Building2,
+  araucana: Users,
+};
 
 const icons: Record<string, LucideIcon> = {
   Brain, ScanLine, Waves, Bone, HeartPulse, Droplets, Activity,
