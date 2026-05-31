@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { Search, X, Plus, Trash2, FileDown, FlaskConical } from "lucide-react";
+import { Search, X, Plus, Trash2, FileDown, FlaskConical, Check, Layers } from "lucide-react";
 import { labDatabase, type LabExam } from "@/data/catalog";
+import { labProfiles, type LabProfile } from "@/data/profiles";
 import { formatCLP, normalize } from "@/lib/format";
 import { generateLabPDF } from "@/lib/pdf";
 
@@ -24,8 +25,22 @@ export function LabQuoter() {
   };
   const remove = (code: string) => setCart((p) => p.filter((c) => c.code !== code));
 
+  const addProfile = (p: LabProfile) => {
+    const item: LabExam =
+      (p.code && labDatabase.find((e) => e.code === p.code)) || {
+        code: `PERFIL-${p.name}`,
+        name: `${p.name} (${p.items.join(", ")})`,
+        fonasa_bcd: null,
+        fonasa_a: p.fonasa_a,
+        particular: p.particular ?? 0,
+        obs: p.code ? "" : "PERFIL · CONSULTAR",
+      };
+    add(item);
+  };
+
   const totalFonasa = cart.reduce((s, e) => s + (e.fonasa_a ?? e.particular), 0);
   const totalPart = cart.reduce((s, e) => s + e.particular, 0);
+
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
