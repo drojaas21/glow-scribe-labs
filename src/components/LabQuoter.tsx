@@ -38,7 +38,8 @@ export function LabQuoter() {
     add(item);
   };
 
-  const totalFonasa = cart.reduce((s, e) => s + (e.fonasa_a ?? e.particular), 0);
+  const totalFonasaA = cart.reduce((s, e) => s + (e.fonasa_a ?? e.particular), 0);
+  const totalFonasaBcd = cart.reduce((s, e) => s + (e.fonasa_bcd ?? e.particular), 0);
   const totalPart = cart.reduce((s, e) => s + e.particular, 0);
 
 
