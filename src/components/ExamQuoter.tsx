@@ -47,7 +47,7 @@ export function ExamQuoter() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Selected>(null);
   const [convenio, setConvenio] = useState<Convenio>("particular");
-  const [copago, setCopago] = useState("");
+  const [prevision, setPrevision] = useState<"particular" | "fa" | "fbcd">("particular");
   const [patientName, setPatientName] = useState("");
   const [patientRut, setPatientRut] = useState("");
   const [recommendations, setRecommendations] = useState("");
