@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import {
   Search, X, Plus, Trash2, FileDown, FlaskConical, Check,
-  Layers, Clock, Info, AlertCircle, ChevronDown,
+  Layers, AlertCircle, ChevronDown,
+  type LucideIcon,
 } from "lucide-react";
-import { labDatabase, type LabExam } from "@/data/catalog";
+import { Landmark, Building2, ShieldCheck, Users } from "lucide-react";
+import { labDatabase, type LabExam, convenioMeta, type Convenio } from "@/data/catalog";
 import { labProfiles, type LabProfile } from "@/data/profiles";
-import { preparationNotes, scheduleInfo, bloodSampleNote } from "@/data/preparation";
 import { soloParticularCodes } from "@/data/soloParticular";
 import { formatCLP, normalize } from "@/lib/format";
 import { generateLabPDF } from "@/lib/pdf";
@@ -22,12 +23,20 @@ function isBlocked(e: LabExam): boolean {
   return blockedCodes.has(e.code) || e.obs.toUpperCase().includes("NO SE REALIZA");
 }
 
+const convenioIcons: Record<Convenio, LucideIcon> = {
+  particular: ShieldCheck,
+  banco: Landmark,
+  caja: Building2,
+  araucana: Users,
+};
+
 export function LabQuoter() {
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<LabExam[]>([]);
+  const [convenio, setConvenio] = useState<Convenio>("particular");
   const [patientName, setPatientName] = useState("");
   const [patientRut, setPatientRut] = useState("");
-  /** Master toggle: show/hide the entire profiles section. */
+  const [observations, setObservations] = useState("");
   const [profilesOpen, setProfilesOpen] = useState(false);
 
   const { mainResults, soloResults } = useMemo(() => {
@@ -80,9 +89,8 @@ export function LabQuoter() {
       {/* ── LEFT column ── */}
       <div className="min-w-0 space-y-5">
 
-        {/* ── Profiles — single master toggle ── */}
+        {/* ── Profiles ── */}
         <div className="overflow-hidden rounded-2xl border bg-card shadow-[var(--shadow-card)]">
-          {/* Toggle button */}
           <button
             onClick={() => setProfilesOpen((v) => !v)}
             className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-secondary/40"
@@ -101,7 +109,6 @@ export function LabQuoter() {
             />
           </button>
 
-          {/* Collapsible body */}
           {profilesOpen && (
             <div className="border-t border-border px-5 pb-5 pt-4">
               <p className="mb-3 text-xs text-muted-foreground">
@@ -160,7 +167,31 @@ export function LabQuoter() {
 
       {/* ── RIGHT column ── */}
       <div className="min-w-0 space-y-5">
-        {/* Cart */}
+
+        {/* ── Convenio ── */}
+        <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">Convenio</h3>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            {(Object.keys(convenioMeta) as Convenio[]).map((c) => {
+              const Icon = convenioIcons[c];
+              const isSel = convenio === c;
+              return (
+                <button
+                  key={c}
+                  onClick={() => setConvenio(c)}
+                  className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-all ${
+                    isSel ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-border bg-background hover:border-primary/40"
+                  }`}
+                >
+                  <Icon className={`h-5 w-5 ${isSel ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="text-[10px] font-semibold leading-tight text-foreground">{convenioMeta[c]}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Cart ── */}
         <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-bold uppercase tracking-wide text-foreground">
@@ -214,7 +245,7 @@ export function LabQuoter() {
             </div>
           )}
 
-          {/* Three totals — always visible */}
+          {/* Three totals */}
           <div className="mt-4 grid grid-cols-3 gap-2">
             <div className="rounded-xl border bg-secondary/40 p-2.5 text-center">
               <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">FONASA A</p>
@@ -237,8 +268,9 @@ export function LabQuoter() {
           </div>
         </div>
 
-        {/* Patient + PDF + Preparation */}
+        {/* ── Patient + Observations + PDF ── */}
         <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">Datos del paciente</h3>
           <div className="grid grid-cols-2 gap-3">
             <input
               value={patientName}
@@ -253,45 +285,30 @@ export function LabQuoter() {
               className="rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
             />
           </div>
+
+          <span className="mb-1 mt-3 block text-xs font-semibold text-foreground">Observación (opcional)</span>
+          <textarea
+            value={observations}
+            onChange={(e) => setObservations(e.target.value)}
+            rows={3}
+            placeholder="Escribe aquí cualquier observación para incluir en la cotización…"
+            className="w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
+          />
+
           <button
-            onClick={() => cart.length && generateLabPDF({ items: cart, patientName, patientRut })}
+            onClick={() => cart.length && generateLabPDF({ items: cart, convenio, patientName, patientRut, observations: observations.trim() })}
             disabled={cart.length === 0}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <FileDown className="h-4 w-4" /> Generar cotización PDF
           </button>
-
-          {/* Preparation instructions */}
-          <div className="mt-4 space-y-3 rounded-xl border border-border bg-muted/40 p-4">
-            <div className="flex items-center gap-2">
-              <Clock className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <p className="text-[11px] font-semibold text-foreground">Horario de toma de muestras</p>
-            </div>
-            <div className="space-y-0.5 pl-5">
-              <p className="text-[10.5px] text-muted-foreground">{scheduleInfo.weekdays}</p>
-              <p className="text-[10.5px] text-muted-foreground">{scheduleInfo.saturday}</p>
-            </div>
-            {preparationNotes.map((n) => (
-              <div key={n.title} className="flex gap-2">
-                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                <div className="min-w-0">
-                  <p className="text-[10.5px] font-semibold text-foreground">{n.title}</p>
-                  <p className="text-[10px] leading-relaxed text-muted-foreground">{n.text}</p>
-                </div>
-              </div>
-            ))}
-            <div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 dark:border-amber-800 dark:bg-amber-950/30">
-              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-              <p className="text-[10px] leading-relaxed text-amber-800 dark:text-amber-300">{bloodSampleNote}</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
   );
 }
 
-/* ── Profile card (always shows items, no individual accordion) ─────────────── */
+/* ── Profile card ─────────────────────────────────────────────────────────── */
 
 function ProfileCard({ p, cart, onAdd }: { p: LabProfile; cart: LabExam[]; onAdd: (p: LabProfile) => void }) {
   const cartKey = p.code ?? `PERFIL-${p.name}`;
@@ -302,7 +319,6 @@ function ProfileCard({ p, cart, onAdd }: { p: LabProfile; cart: LabExam[]; onAdd
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-background">
-      {/* Header */}
       <div className="flex min-w-0 items-center justify-between gap-2 px-3 py-2.5" style={{ backgroundColor: p.tint }}>
         <div className="min-w-0 flex-1">
           <span className={`block truncate text-xs font-bold drop-shadow-sm ${fg}`}>{p.name}</span>
@@ -325,7 +341,6 @@ function ProfileCard({ p, cart, onAdd }: { p: LabProfile; cart: LabExam[]; onAdd
         </button>
       </div>
 
-      {/* Items + prices */}
       <div className="px-3 py-2">
         <div className="flex flex-wrap gap-1">
           {p.items.map((it) => (
@@ -353,7 +368,7 @@ function ProfileCard({ p, cart, onAdd }: { p: LabProfile; cart: LabExam[]; onAdd
   );
 }
 
-/* ── Catalog exam list ──────────────────────────────────────────────────────── */
+/* ── Catalog exam list ─────────────────────────────────────────────────────── */
 
 function ExamList({
   items,

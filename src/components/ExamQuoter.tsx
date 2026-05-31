@@ -10,8 +10,7 @@ import {
 } from "@/data/catalog";
 import { formatCLP, normalize } from "@/lib/format";
 import { generateExamPDF } from "@/lib/pdf";
-import { categoryRecommendations } from "@/data/recommendations";
-import { Landmark, Building2, ShieldCheck, Users, Lightbulb } from "lucide-react";
+import { Landmark, Building2, ShieldCheck, Users } from "lucide-react";
 
 const convenioIcons: Record<Convenio, LucideIcon> = {
   particular: ShieldCheck,
@@ -37,7 +36,7 @@ export function ExamQuoter() {
   const [prevision, setPrevision] = useState<"particular" | "fa" | "fbcd">("particular");
   const [patientName, setPatientName] = useState("");
   const [patientRut, setPatientRut] = useState("");
-  const [recommendations, setRecommendations] = useState("");
+  const [observations, setObservations] = useState("");
 
   const searchResults = useMemo(() => {
     if (query.trim().length < 2) return null;
@@ -98,21 +97,13 @@ export function ExamQuoter() {
   const previsionLabel =
     prevision === "particular" ? "Particular" : prevision === "fa" ? "FONASA A" : "FONASA B / C / D";
 
-  const allRecs = [...new Set(
-    cart.flatMap((item) => categoryRecommendations[item.category] ?? [])
-  )];
-
   const handlePDF = () => {
     if (cart.length === 0) return;
     const pdfItems = cart.map((item) => {
       const { base, pct, discountAmt, discountedUnit, lineTotal } = calcItem(item);
       return { exam: item.exam, category: item.category, qty: item.qty, baseUnit: base, discountPct: pct, discountAmt, discountedUnit, lineTotal };
     });
-    const combined = [
-      ...allRecs.map((r) => `• ${r}`),
-      ...(recommendations.trim() ? ["", recommendations.trim()] : []),
-    ].join("\n");
-    generateExamPDF({ items: pdfItems, convenio, prevision: previsionLabel, grandTotal, patientName, patientRut, recommendations: combined });
+    generateExamPDF({ items: pdfItems, convenio, prevision: previsionLabel, grandTotal, patientName, patientRut, observations: observations.trim() });
   };
 
   return (
@@ -375,9 +366,9 @@ export function ExamQuoter() {
           )}
         </div>
 
-        {/* Patient + recommendations + PDF */}
+        {/* Patient + observations + PDF */}
         <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
-          <SectionTitle>Datos y recomendaciones</SectionTitle>
+          <SectionTitle>Datos del paciente</SectionTitle>
           <div className="grid grid-cols-2 gap-3">
             <input value={patientName} onChange={(e) => setPatientName(e.target.value)} placeholder="Nombre del paciente"
               className="rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30" />
@@ -385,28 +376,12 @@ export function ExamQuoter() {
               className="rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30" />
           </div>
 
-          {allRecs.length > 0 && (
-            <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
-              <p className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-primary">
-                <Lightbulb className="h-3.5 w-3.5" /> Recordatorios automáticos
-              </p>
-              <ul className="space-y-1">
-                {allRecs.map((r) => (
-                  <li key={r} className="flex gap-1.5 text-[11px] leading-snug text-foreground">
-                    <span className="mt-1 inline-block h-1 w-1 shrink-0 rounded-full bg-primary" />
-                    {r}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <span className="mb-1 mt-3 block text-xs font-semibold text-foreground">Notas adicionales (opcional)</span>
+          <span className="mb-1 mt-3 block text-xs font-semibold text-foreground">Observación (opcional)</span>
           <textarea
-            value={recommendations}
-            onChange={(e) => setRecommendations(e.target.value)}
+            value={observations}
+            onChange={(e) => setObservations(e.target.value)}
             rows={3}
-            placeholder="Indicaciones adicionales para este paciente…"
+            placeholder="Escribe aquí cualquier observación para incluir en la cotización…"
             className="w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
           />
 

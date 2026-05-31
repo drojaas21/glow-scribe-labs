@@ -3,7 +3,6 @@ import autoTable from "jspdf-autotable";
 import { formatCLP } from "./format";
 import type { Exam, ExamCategory, Convenio, LabExam } from "@/data/catalog";
 import { categoryMeta, convenioMeta } from "@/data/catalog";
-import { preparationNotes, scheduleInfo, bloodSampleNote } from "@/data/preparation";
 
 const BRAND: [number, number, number] = [25, 96, 165];
 const BRAND_DARK: [number, number, number] = [20, 54, 93];
@@ -44,6 +43,26 @@ function patientBox(doc: jsPDF, y: number, name: string, rut: string) {
   return y + 22;
 }
 
+function observationsBox(doc: jsPDF, y: number, text: string): number {
+  if (!text.trim()) return y;
+  doc.setDrawColor(...BRAND);
+  doc.setFillColor(241, 247, 252);
+  doc.setTextColor(...BRAND_DARK);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("OBSERVACIÓN", 15, y);
+  y += 4;
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(60, 60, 60);
+  doc.setFontSize(9);
+  const lines = doc.splitTextToSize(text, 180);
+  doc.setFillColor(241, 247, 252);
+  doc.setDrawColor(...BRAND);
+  doc.roundedRect(15, y, 180, lines.length * 5 + 6, 2, 2, "FD");
+  doc.text(lines, 19, y + 5);
+  return y + lines.length * 5 + 12;
+}
+
 function footer(doc: jsPDF) {
   doc.setFontSize(8);
   doc.setTextColor(130, 130, 130);
@@ -53,7 +72,7 @@ function footer(doc: jsPDF) {
   );
 }
 
-// ── Imagenología PDF (multi-exam cart) ────────────────────────────────────────
+// ── Imagenología PDF ────────────────────────────────────────────────────────
 
 export type ExamCartPDFItem = {
   exam: Exam;
@@ -73,13 +92,13 @@ export function generateExamPDF(args: {
   grandTotal: number;
   patientName: string;
   patientRut: string;
-  recommendations: string;
+  observations: string;
 }) {
   const doc = new jsPDF();
   header(doc, "Cotización de Exámenes de Imagenología");
   let y = patientBox(doc, 38, args.patientName, args.patientRut);
 
-  // Info row
+  // Info row: previsión + convenio
   doc.setFillColor(241, 247, 252);
   doc.setDrawColor(...BRAND);
   doc.roundedRect(15, y, 180, 12, 2, 2, "FD");
@@ -145,34 +164,38 @@ export function generateExamPDF(args: {
   doc.text(formatCLP(args.grandTotal), 188, y + 16, { align: "right" });
   y += 32;
 
-  if (args.recommendations.trim()) {
-    doc.setTextColor(...BRAND_DARK);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text("Recomendaciones para el examen", 15, y);
-    y += 5;
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(60, 60, 60);
-    doc.setFontSize(9);
-    const lines = doc.splitTextToSize(args.recommendations, 180);
-    doc.text(lines, 15, y + 3);
-  }
+  y = observationsBox(doc, y, args.observations);
 
   footer(doc);
   const firstName = args.items[0]?.exam.name.slice(0, 20).replace(/[^a-zA-Z0-9]/g, "_") ?? "Examen";
   doc.save(`Cotizacion_${firstName}.pdf`);
 }
 
-// ── Laboratorio PDF ────────────────────────────────────────────────────────────
+// ── Laboratorio PDF ────────────────────────────────────────────────────────
 
 export function generateLabPDF(args: {
   items: LabExam[];
+  convenio: Convenio;
   patientName: string;
   patientRut: string;
+  observations: string;
 }) {
   const doc = new jsPDF();
   header(doc, "Cotización de Exámenes de Laboratorio");
-  const y = patientBox(doc, 38, args.patientName, args.patientRut);
+  let y = patientBox(doc, 38, args.patientName, args.patientRut);
+
+  // Info row: convenio
+  doc.setFillColor(241, 247, 252);
+  doc.setDrawColor(...BRAND);
+  doc.roundedRect(15, y, 180, 12, 2, 2, "FD");
+  doc.setTextColor(...BRAND_DARK);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.text("Convenio:", 20, y + 8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(40, 40, 40);
+  doc.text(convenioMeta[args.convenio], 48, y + 8);
+  y += 18;
 
   const totalFonasaA = args.items.reduce((s, e) => s + (e.fonasa_a ?? e.particular), 0);
   const totalFonasaBcd = args.items.reduce((s, e) => s + (e.fonasa_bcd ?? e.particular), 0);
@@ -180,11 +203,10 @@ export function generateLabPDF(args: {
 
   autoTable(doc, {
     startY: y,
-    head: [["Código", "Examen", "Obs.", "FONASA A", "FONASA B/C/D", "Particular"]],
+    head: [["Código", "Examen", "FONASA A", "FONASA B/C/D", "Particular"]],
     body: args.items.map((e) => [
       e.code,
       e.name,
-      e.obs?.trim() || "",
       e.fonasa_a != null ? formatCLP(e.fonasa_a) : "—",
       e.fonasa_bcd != null ? formatCLP(e.fonasa_bcd) : "—",
       e.particular > 0 ? formatCLP(e.particular) : "Consultar",
@@ -192,11 +214,10 @@ export function generateLabPDF(args: {
     theme: "striped",
     headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold" },
     columnStyles: {
-      0: { cellWidth: 22, fontStyle: "bold", textColor: BRAND_DARK },
-      2: { cellWidth: 20, fontSize: 7.5, textColor: [160, 100, 20] },
-      3: { halign: "right", cellWidth: 26 },
-      4: { halign: "right", cellWidth: 26 },
-      5: { halign: "right", cellWidth: 26 },
+      0: { cellWidth: 24, fontStyle: "bold", textColor: BRAND_DARK },
+      2: { halign: "right", cellWidth: 28 },
+      3: { halign: "right", cellWidth: 28 },
+      4: { halign: "right", cellWidth: 28 },
     },
     styles: { fontSize: 8, cellPadding: 2.5 },
   });
@@ -238,42 +259,7 @@ export function generateLabPDF(args: {
   doc.text(formatCLP(totalPart), 188, yy + 16, { align: "right" });
   yy += 32;
 
-  doc.setFillColor(255, 251, 235);
-  doc.setDrawColor(245, 158, 11);
-  doc.roundedRect(15, yy, 180, 12, 2, 2, "FD");
-  doc.setTextColor(120, 75, 10);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.5);
-  const noteLines = doc.splitTextToSize(bloodSampleNote, 174);
-  doc.text(noteLines, 18, yy + 7);
-  yy += 18;
-
-  doc.setTextColor(...BRAND_DARK);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9.5);
-  doc.text("Indicaciones de preparación del paciente", 15, yy);
-  yy += 5;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(60, 60, 60);
-  doc.text("Horario de toma de muestras:", 15, yy + 5);
-  doc.setFont("helvetica", "normal");
-  doc.text(`• ${scheduleInfo.weekdays}`, 15, yy + 11);
-  doc.text(`• ${scheduleInfo.saturday}`, 15, yy + 17);
-  yy += 23;
-
-  for (const note of preparationNotes) {
-    if (yy > 265) break;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    doc.setTextColor(60, 60, 60);
-    doc.text(`${note.title}:`, 15, yy);
-    doc.setFont("helvetica", "normal");
-    const lines = doc.splitTextToSize(`• ${note.text}`, 180);
-    doc.text(lines, 15, yy + 5);
-    yy += 5 + lines.length * 4.5;
-  }
+  yy = observationsBox(doc, yy, args.observations);
 
   footer(doc);
   doc.save("Cotizacion_Laboratorio.pdf");
