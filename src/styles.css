@@ -128,3 +128,10 @@
     font-family: var(--font-display);
   }
 }
+
+.bg-gradient-brand {
+  background-image: var(--gradient-brand);
+}
+.bg-gradient-soft {
+  background-image: var(--gradient-soft);
+}

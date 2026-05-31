@@ -26,6 +26,15 @@ import {
 } from "@/data/catalog";
 import { formatCLP, sanitizeNumber, normalize } from "@/lib/format";
 import { generateExamPDF } from "@/lib/pdf";
+import { categoryRecommendations } from "@/data/recommendations";
+import { Landmark, Building2, ShieldCheck, Users, Lightbulb } from "lucide-react";
+
+const convenioIcons: Record<Convenio, LucideIcon> = {
+  particular: ShieldCheck,
+  banco: Landmark,
+  caja: Building2,
+  araucana: Users,
+};
 
 const icons: Record<string, LucideIcon> = {
   Brain, ScanLine, Waves, Bone, HeartPulse, Droplets, Activity,
@@ -77,8 +86,14 @@ export function ExamQuoter() {
 
   const canPDF = !!(selected && calc && calc.base > 0);
 
+  const autoRecs = selected ? categoryRecommendations[selected.category] : [];
+
   const handlePDF = () => {
     if (!canPDF || !selectedExam || !selected || !calc) return;
+    const combined = [
+      ...autoRecs.map((r) => `• ${r}`),
+      ...(recommendations.trim() ? ["", recommendations.trim()] : []),
+    ].join("\n");
     generateExamPDF({
       exam: selectedExam,
       category: selected.category,
@@ -90,9 +105,10 @@ export function ExamQuoter() {
       totalBoleta: calc.totalBoleta,
       patientName,
       patientRut,
-      recommendations,
+      recommendations: combined,
     });
   };
+
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
@@ -110,7 +126,7 @@ export function ExamQuoter() {
                 onClick={() => { setActiveCat(cat); setQuery(""); }}
                 className={`group flex flex-col items-center gap-2 rounded-xl border px-2 py-3 text-center transition-all ${
                   active
-                    ? "border-transparent bg-[var(--gradient-brand)] text-primary-foreground shadow-[var(--shadow-lift)]"
+                    ? "border-transparent bg-gradient-brand text-primary-foreground shadow-[var(--shadow-lift)]"
                     : "border-border bg-secondary/40 text-secondary-foreground hover:border-primary/40 hover:bg-secondary"
                 }`}
               >
@@ -200,30 +216,49 @@ export function ExamQuoter() {
             )}
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-foreground">Convenio</span>
-              <select
-                value={convenio}
-                onChange={(e) => setConvenio(e.target.value as Convenio)}
-                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
-              >
-                {(Object.keys(convenioMeta) as Convenio[]).map((c) => (
-                  <option key={c} value={c}>{convenioMeta[c]}</option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-foreground">Copago base</span>
-              <input
-                inputMode="numeric"
-                value={copago}
-                onChange={(e) => setCopago(e.target.value)}
-                placeholder="$0"
-                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
-              />
-            </label>
+          <div className="mt-4">
+            <span className="mb-1.5 block text-xs font-semibold text-foreground">Convenio comercial</span>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              {(Object.keys(convenioMeta) as Convenio[]).map((c) => {
+                const Icon = convenioIcons[c];
+                const pct = selected ? discountMatrix[selected.category]?.[c] ?? 0 : 0;
+                const isSel = convenio === c;
+                return (
+                  <button
+                    key={c}
+                    onClick={() => setConvenio(c)}
+                    className={`relative flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-all ${
+                      isSel
+                        ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                        : "border-border bg-background hover:border-primary/40"
+                    }`}
+                  >
+                    {c !== "particular" && (
+                      <span className={`absolute right-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${pct > 0 ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
+                        {pct > 0 ? `-${pct}%` : "0%"}
+                      </span>
+                    )}
+                    <Icon className={`h-5 w-5 ${isSel ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className="text-[10px] font-semibold leading-tight text-foreground">{convenioMeta[c]}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {!selected && (
+              <p className="mt-1.5 text-[11px] text-muted-foreground">Selecciona un examen para ver el descuento de cada convenio.</p>
+            )}
           </div>
+
+          <label className="mt-4 block">
+            <span className="mb-1 block text-xs font-semibold text-foreground">Copago base de la previsión</span>
+            <input
+              inputMode="numeric"
+              value={copago}
+              onChange={(e) => setCopago(e.target.value)}
+              placeholder="$0"
+              className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
+            />
+          </label>
 
           {/* results */}
           <div className="mt-4 space-y-2">
@@ -232,7 +267,7 @@ export function ExamQuoter() {
             <ResultRow label="Copago final" value={formatCLP(calc?.copagoFinal ?? 0)} />
           </div>
 
-          <div className="mt-3 rounded-xl bg-[var(--gradient-brand)] px-4 py-3.5 text-primary-foreground shadow-[var(--shadow-lift)]">
+          <div className="mt-3 rounded-xl bg-gradient-brand px-4 py-3.5 text-primary-foreground shadow-[var(--shadow-lift)]">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium opacity-90">Valor total a pagar</span>
               <span className="text-2xl font-bold tracking-tight">{formatCLP(calc?.totalBoleta ?? 0)}</span>
@@ -248,9 +283,27 @@ export function ExamQuoter() {
             <input value={patientRut} onChange={(e) => setPatientRut(e.target.value)} placeholder="RUT"
               className="rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30" />
           </div>
+
+          {autoRecs.length > 0 && (
+            <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
+              <p className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-primary">
+                <Lightbulb className="h-3.5 w-3.5" /> Recordatorio automático · {categoryMeta[selected!.category].label}
+              </p>
+              <ul className="space-y-1">
+                {autoRecs.map((r) => (
+                  <li key={r} className="flex gap-1.5 text-[11px] leading-snug text-foreground">
+                    <span className="mt-1 inline-block h-1 w-1 shrink-0 rounded-full bg-primary" />
+                    {r}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <span className="mb-1 mt-3 block text-xs font-semibold text-foreground">Notas adicionales (opcional)</span>
           <textarea value={recommendations} onChange={(e) => setRecommendations(e.target.value)} rows={3}
-            placeholder="Ej: 8 horas de ayuno, si es con contraste y mayor de 60 años, creatinina para RM…"
-            className="mt-3 w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30" />
+            placeholder="Indicaciones adicionales para este paciente…"
+            className="w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30" />
 
           <button
             onClick={handlePDF}

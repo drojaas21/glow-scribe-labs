@@ -47,7 +47,7 @@ export function CashRegister() {
     <div className="mx-auto max-w-3xl">
       <div className="rounded-2xl border bg-card p-6 shadow-[var(--shadow-card)]">
         <div className="mb-5 flex items-center gap-2.5">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--gradient-brand)] text-primary-foreground">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-brand text-primary-foreground">
             <Wallet className="h-5 w-5" />
           </span>
           <h3 className="text-base font-bold text-foreground">Calculadora de vuelto</h3>
@@ -73,7 +73,7 @@ export function CashRegister() {
 
         {result && (
           <div className="mt-5">
-            <div className={`rounded-xl px-5 py-4 ${result.error ? "bg-destructive/10" : "bg-[var(--gradient-brand)]"}`}>
+            <div className={`rounded-xl px-5 py-4 ${result.error ? "bg-destructive/10" : "bg-gradient-brand"}`}>
               <div className="flex items-center justify-between">
                 <span className={`text-sm font-medium ${result.error ? "text-destructive" : "text-primary-foreground opacity-90"}`}>
                   {result.error ? "Monto insuficiente" : "Vuelto a entregar"}
