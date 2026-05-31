@@ -6,3 +6,9 @@ id = "GmoMHFJivxRhGNl--_Hfz"
 uri = "file://diagno-pro-cotizador.zip"
 type = "unspecified"
 title = "DiagnoPRO Cotizador — archivos compilados"
+
+[[outputs]]
+id = "LhzrsaDK01PR1rHfVPrAA"
+uri = "file://diagno-pro-cotizador-completo.zip"
+type = "unspecified"
+title = "DiagnoPRO Cotizador — proyecto completo"
