@@ -3,11 +3,12 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 import { QueryClient } from "@tanstack/react-query";
 import { routeTree } from "./routeTree.gen";
-import { createRouter } from "@tanstack/react-router";
+import { createRouter, createHashHistory } from "@tanstack/react-router";
 
 const queryClient = new QueryClient();
 
 const router = createRouter({
+  history: createHashHistory(),
   routeTree,
   context: { queryClient },
   scrollRestoration: true,
