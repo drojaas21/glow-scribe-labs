@@ -137,6 +137,8 @@ export function LabQuoter() {
           })}
         </div>
       </div>
+      </div>
+
 
       <div className="space-y-5">
         <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
