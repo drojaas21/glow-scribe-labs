@@ -276,9 +276,27 @@ export function ExamQuoter() {
             <input value={patientRut} onChange={(e) => setPatientRut(e.target.value)} placeholder="RUT"
               className="rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30" />
           </div>
+
+          {autoRecs.length > 0 && (
+            <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
+              <p className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-primary">
+                <Lightbulb className="h-3.5 w-3.5" /> Recordatorio automático · {categoryMeta[selected!.category].label}
+              </p>
+              <ul className="space-y-1">
+                {autoRecs.map((r) => (
+                  <li key={r} className="flex gap-1.5 text-[11px] leading-snug text-foreground">
+                    <span className="mt-1 inline-block h-1 w-1 shrink-0 rounded-full bg-primary" />
+                    {r}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <span className="mb-1 mt-3 block text-xs font-semibold text-foreground">Notas adicionales (opcional)</span>
           <textarea value={recommendations} onChange={(e) => setRecommendations(e.target.value)} rows={3}
-            placeholder="Ej: 8 horas de ayuno, si es con contraste y mayor de 60 años, creatinina para RM…"
-            className="mt-3 w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30" />
+            placeholder="Indicaciones adicionales para este paciente…"
+            className="w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30" />
 
           <button
             onClick={handlePDF}
