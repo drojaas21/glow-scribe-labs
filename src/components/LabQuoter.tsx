@@ -44,6 +44,49 @@ export function LabQuoter() {
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
+      <div className="space-y-5">
+      <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
+        <h3 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-foreground">
+          <Layers className="h-4 w-4 text-primary" /> Perfiles destacados
+        </h3>
+        <p className="mb-3 text-xs text-muted-foreground">Agrupaciones frecuentes de exámenes. Haz clic para agregarlas a la cotización.</p>
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          {labProfiles.map((p) => {
+            const inCart = cart.some((c) => c.code === (p.code ?? `PERFIL-${p.name}`));
+            return (
+              <div
+                key={p.name}
+                className="overflow-hidden rounded-xl border border-border bg-background"
+              >
+                <div className="flex items-center justify-between gap-2 px-3 py-2" style={{ backgroundColor: p.tint }}>
+                  <span className="text-xs font-bold text-white drop-shadow">{p.name}</span>
+                  <button
+                    onClick={() => addProfile(p)}
+                    disabled={inCart}
+                    className="flex items-center gap-1 rounded-md bg-white/25 px-2 py-1 text-[11px] font-semibold text-white backdrop-blur transition hover:bg-white/40 disabled:opacity-50"
+                  >
+                    {inCart ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                    {inCart ? "Agregado" : "Agregar"}
+                  </button>
+                </div>
+                <div className="px-3 py-2">
+                  <div className="flex flex-wrap gap-1">
+                    {p.items.map((it) => (
+                      <span key={it} className="rounded bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground">{it}</span>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    {p.particular != null
+                      ? <>Particular <b className="text-foreground">{formatCLP(p.particular)}</b>{p.fonasa_a != null && <> · FONASA A <b className="text-foreground">{formatCLP(p.fonasa_a)}</b></>}</>
+                      : <span className="font-semibold text-primary">Valor a confirmar en atención</span>}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
         <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">Catálogo de laboratorio</h3>
         <div className="relative">
