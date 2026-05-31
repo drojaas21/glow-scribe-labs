@@ -209,30 +209,49 @@ export function ExamQuoter() {
             )}
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-foreground">Convenio</span>
-              <select
-                value={convenio}
-                onChange={(e) => setConvenio(e.target.value as Convenio)}
-                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
-              >
-                {(Object.keys(convenioMeta) as Convenio[]).map((c) => (
-                  <option key={c} value={c}>{convenioMeta[c]}</option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-foreground">Copago base</span>
-              <input
-                inputMode="numeric"
-                value={copago}
-                onChange={(e) => setCopago(e.target.value)}
-                placeholder="$0"
-                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
-              />
-            </label>
+          <div className="mt-4">
+            <span className="mb-1.5 block text-xs font-semibold text-foreground">Convenio comercial</span>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              {(Object.keys(convenioMeta) as Convenio[]).map((c) => {
+                const Icon = convenioIcons[c];
+                const pct = selected ? discountMatrix[selected.category]?.[c] ?? 0 : 0;
+                const isSel = convenio === c;
+                return (
+                  <button
+                    key={c}
+                    onClick={() => setConvenio(c)}
+                    className={`relative flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-all ${
+                      isSel
+                        ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                        : "border-border bg-background hover:border-primary/40"
+                    }`}
+                  >
+                    {c !== "particular" && (
+                      <span className={`absolute right-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${pct > 0 ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
+                        {pct > 0 ? `-${pct}%` : "0%"}
+                      </span>
+                    )}
+                    <Icon className={`h-5 w-5 ${isSel ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className="text-[10px] font-semibold leading-tight text-foreground">{convenioMeta[c]}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {!selected && (
+              <p className="mt-1.5 text-[11px] text-muted-foreground">Selecciona un examen para ver el descuento de cada convenio.</p>
+            )}
           </div>
+
+          <label className="mt-4 block">
+            <span className="mb-1 block text-xs font-semibold text-foreground">Copago base de la previsión</span>
+            <input
+              inputMode="numeric"
+              value={copago}
+              onChange={(e) => setCopago(e.target.value)}
+              placeholder="$0"
+              className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
+            />
+          </label>
 
           {/* results */}
           <div className="mt-4 space-y-2">
