@@ -181,8 +181,12 @@ export function LabQuoter() {
 
           <div className="mt-4 space-y-2">
             <div className="flex items-center justify-between border-b border-dashed border-border pb-2 text-sm">
-              <span className="text-muted-foreground">Total FONASA</span>
-              <span className="font-semibold text-foreground">{formatCLP(totalFonasa)}</span>
+              <span className="text-muted-foreground">Total FONASA A</span>
+              <span className="font-semibold text-foreground">{formatCLP(totalFonasaA)}</span>
+            </div>
+            <div className="flex items-center justify-between border-b border-dashed border-border pb-2 text-sm">
+              <span className="text-muted-foreground">Total FONASA B / C / D</span>
+              <span className="font-semibold text-foreground">{formatCLP(totalFonasaBcd)}</span>
             </div>
           </div>
           <div className="mt-3 rounded-xl bg-gradient-brand px-4 py-3.5 text-primary-foreground shadow-[var(--shadow-lift)]">
