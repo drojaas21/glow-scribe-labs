@@ -24,7 +24,7 @@ import {
   type ExamCategory,
   type Convenio,
 } from "@/data/catalog";
-import { formatCLP, sanitizeNumber, normalize } from "@/lib/format";
+import { formatCLP, normalize } from "@/lib/format";
 import { generateExamPDF } from "@/lib/pdf";
 import { categoryRecommendations } from "@/data/recommendations";
 import { Landmark, Building2, ShieldCheck, Users, Lightbulb } from "lucide-react";
