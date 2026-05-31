@@ -30,8 +30,10 @@ export function LabQuoter() {
   const [cart, setCart] = useState<LabExam[]>([]);
   const [patientName, setPatientName] = useState("");
   const [patientRut, setPatientRut] = useState("");
-  /** Set of profile names that are currently expanded. */
+  /** Set of profile names that are currently expanded in the accordion. */
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  /** Whether the SOLO PARTICULARES section is open. */
+  const [soloOpen, setSoloOpen] = useState(false);
 
   const toggleProfile = (name: string) =>
     setExpanded((prev) => {
@@ -217,13 +219,21 @@ export function LabQuoter() {
 
             {soloResults.length > 0 && (
               <>
-                <div className="sticky top-0 z-10 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 dark:border-red-800 dark:bg-red-950/40">
-                  <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" />
-                  <p className="text-[11px] font-semibold text-red-700 dark:text-red-400">
-                    Solo Particulares — Exámenes no realizados internamente
+                {/* Single accordion toggle for ALL solo particulares */}
+                <button
+                  onClick={() => setSoloOpen((v) => !v)}
+                  className="sticky top-0 z-10 flex w-full items-center gap-2 rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-left transition hover:bg-orange-100 dark:border-orange-700 dark:bg-orange-950/40 dark:hover:bg-orange-950/60"
+                >
+                  <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-orange-600 transition-transform duration-200 dark:text-orange-400 ${soloOpen ? "rotate-180" : ""}`} />
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0 text-orange-600 dark:text-orange-400" />
+                  <p className="flex-1 text-[11px] font-semibold text-orange-700 dark:text-orange-400">
+                    Solo Particulares — Exámenes externos ({soloResults.length})
                   </p>
-                </div>
-                <ExamList items={soloResults} cart={cart} onAdd={add} isSolo />
+                  <span className="text-[10px] text-orange-500 dark:text-orange-500">
+                    {soloOpen ? "Ocultar" : "Ver todos"}
+                  </span>
+                </button>
+                {soloOpen && <ExamList items={soloResults} cart={cart} onAdd={add} isSolo />}
               </>
             )}
           </div>
@@ -260,14 +270,14 @@ export function LabQuoter() {
                     key={e.code}
                     className={`flex items-center gap-2 rounded-lg border p-2.5 ${
                       isSolo
-                        ? "border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20"
+                        ? "border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20"
                         : isBoleta
                         ? "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
                         : "border-border bg-background"
                     }`}
                   >
                     <div className="min-w-0 flex-1">
-                      <p className={`truncate text-xs font-semibold ${isSolo ? "text-red-700 dark:text-red-400" : "text-foreground"}`}>
+                      <p className={`truncate text-xs font-semibold ${isSolo ? "text-orange-700 dark:text-orange-400" : "text-foreground"}`}>
                         {cleanName(e.name)}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
@@ -379,14 +389,14 @@ function ExamList({
         const isBoleta = !isSolo && e.obs?.toUpperCase().includes("BOLETA");
 
         let cardCls = "border-border bg-background";
-        if (isSolo) cardCls = "border-red-200 bg-red-50/40 dark:border-red-900/60 dark:bg-red-950/20";
+        if (isSolo) cardCls = "border-orange-200 bg-orange-50/40 dark:border-orange-800/60 dark:bg-orange-950/20";
         else if (isBoleta) cardCls = "border-amber-200 bg-amber-50/40 dark:border-amber-800 dark:bg-amber-950/10";
 
         let nameCls = "text-foreground";
-        if (isSolo) nameCls = "text-red-700 dark:text-red-400";
+        if (isSolo) nameCls = "text-orange-700 dark:text-orange-400";
 
         let codeCls = "bg-secondary text-secondary-foreground";
-        if (isSolo) codeCls = "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400";
+        if (isSolo) codeCls = "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400";
         else if (isBoleta) codeCls = "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300";
 
         return (
@@ -413,7 +423,7 @@ function ExamList({
                     {e.particular > 0 && (
                       <span>
                         Particular{" "}
-                        <b className={isSolo ? "text-red-700 dark:text-red-400" : "text-foreground"}>
+                        <b className={isSolo ? "text-orange-700 dark:text-orange-400" : "text-foreground"}>
                           {formatCLP(e.particular)}
                         </b>
                       </span>
