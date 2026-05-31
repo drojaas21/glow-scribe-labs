@@ -12,3 +12,9 @@ id = "LhzrsaDK01PR1rHfVPrAA"
 uri = "file://diagno-pro-cotizador-completo.zip"
 type = "unspecified"
 title = "DiagnoPRO Cotizador — proyecto completo"
+
+[[outputs]]
+id = "97X5zKxm0BnuciAV7-25q"
+uri = "file://diagno-pro-local.zip"
+type = "unspecified"
+title = "DiagnoPRO — listo para abrir en tu PC"
