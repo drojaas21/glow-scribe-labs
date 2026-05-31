@@ -30,7 +30,7 @@ function Index() {
   const [tab, setTab] = useState<Tab>("examenes");
 
   return (
-    <div className="min-h-screen bg-[var(--gradient-soft)]">
+    <div className="min-h-screen bg-gradient-soft">
       {/* Header */}
       <header className="border-b border-border/70 bg-card/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
@@ -69,7 +69,7 @@ function Index() {
                 onClick={() => setTab(t.id)}
                 className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${
                   active
-                    ? "bg-[var(--gradient-brand)] text-primary-foreground shadow-[var(--shadow-lift)]"
+                    ? "bg-gradient-brand text-primary-foreground shadow-[var(--shadow-lift)]"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >

@@ -116,7 +116,7 @@ export function LabQuoter() {
               <span className="font-semibold text-foreground">{formatCLP(totalFonasa)}</span>
             </div>
           </div>
-          <div className="mt-3 rounded-xl bg-[var(--gradient-brand)] px-4 py-3.5 text-primary-foreground shadow-[var(--shadow-lift)]">
+          <div className="mt-3 rounded-xl bg-gradient-brand px-4 py-3.5 text-primary-foreground shadow-[var(--shadow-lift)]">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium opacity-90">Total particular</span>
               <span className="text-2xl font-bold tracking-tight">{formatCLP(totalPart)}</span>
