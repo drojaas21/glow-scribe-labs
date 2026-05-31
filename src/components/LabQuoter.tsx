@@ -13,12 +13,9 @@ import { generateLabPDF } from "@/lib/pdf";
 /** Codes explicitly blocked from sale (exams not done internally). */
 const blockedCodes = new Set(["0301095", "0306118", "0306123"]);
 
-/** Strip noise tokens from display names (e.g. "*PARTICULAR*", "  "). */
+/** Strip noise tokens from display names (e.g. "*PARTICULAR*"). */
 function cleanName(name: string): string {
-  return name
-    .replace(/\*PARTICULAR\*/gi, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
+  return name.replace(/\*PARTICULAR\*/gi, "").replace(/\s{2,}/g, " ").trim();
 }
 
 function isBlocked(e: LabExam): boolean {
@@ -30,17 +27,8 @@ export function LabQuoter() {
   const [cart, setCart] = useState<LabExam[]>([]);
   const [patientName, setPatientName] = useState("");
   const [patientRut, setPatientRut] = useState("");
-  /** Set of profile names that are currently expanded in the accordion. */
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  /** Whether the SOLO PARTICULARES section is open. */
-  const [soloOpen, setSoloOpen] = useState(false);
-
-  const toggleProfile = (name: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      next.has(name) ? next.delete(name) : next.add(name);
-      return next;
-    });
+  /** Master toggle: show/hide the entire profiles section. */
+  const [profilesOpen, setProfilesOpen] = useState(false);
 
   const { mainResults, soloResults } = useMemo(() => {
     const all =
@@ -50,7 +38,6 @@ export function LabQuoter() {
             const q = normalize(query);
             return labDatabase.filter(
               (e) =>
-                normalize(e.name).includes(q) ||
                 normalize(cleanName(e.name)).includes(q) ||
                 e.code.includes(query.trim()),
             );
@@ -93,102 +80,41 @@ export function LabQuoter() {
       {/* ── LEFT column ── */}
       <div className="min-w-0 space-y-5">
 
-        {/* Profiles — accordion */}
-        <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
-          <h3 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-foreground">
-            <Layers className="h-4 w-4 text-primary" /> Perfiles destacados
-          </h3>
-          <p className="mb-3 text-xs text-muted-foreground">
-            Haz clic en el encabezado para expandir sus exámenes. Usa "Agregar" para cotizar.
-          </p>
-          <div className="space-y-2">
-            {labProfiles.map((p) => {
-              const cartKey = p.code ?? `PERFIL-${p.name}`;
-              const inCart = cart.some((c) => c.code === cartKey);
-              const isOpen = expanded.has(p.name);
-              const fg = p.textDark ? "text-gray-900" : "text-white";
-              const fgSub = p.textDark ? "text-gray-800/70" : "text-white/80";
-              const btnBg = p.textDark
-                ? "bg-black/15 hover:bg-black/25"
-                : "bg-white/25 hover:bg-white/40";
+        {/* ── Profiles — single master toggle ── */}
+        <div className="overflow-hidden rounded-2xl border bg-card shadow-[var(--shadow-card)]">
+          {/* Toggle button */}
+          <button
+            onClick={() => setProfilesOpen((v) => !v)}
+            className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-secondary/40"
+          >
+            <Layers className="h-4 w-4 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <span className="text-sm font-bold uppercase tracking-wide text-foreground">
+                Perfiles destacados
+              </span>
+              <span className="ml-2 text-xs text-muted-foreground">
+                ({labProfiles.length} agrupaciones)
+              </span>
+            </div>
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${profilesOpen ? "rotate-180" : ""}`}
+            />
+          </button>
 
-              return (
-                <div key={p.name} className="overflow-hidden rounded-xl border border-border bg-background">
-                  {/* ── Accordion header (clickable) ── */}
-                  <div
-                    className="flex min-w-0 cursor-pointer items-center gap-2 px-3 py-2.5 select-none"
-                    style={{ backgroundColor: p.tint }}
-                    onClick={() => toggleProfile(p.name)}
-                  >
-                    {/* Chevron */}
-                    <ChevronDown
-                      className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${fg} ${isOpen ? "rotate-180" : ""}`}
-                    />
-                    {/* Title */}
-                    <div className="min-w-0 flex-1">
-                      <span className={`block truncate text-xs font-bold drop-shadow-sm ${fg}`}>{p.name}</span>
-                      {p.code && !/^PERFIL/.test(p.code) && /^\d/.test(p.code) && (
-                        <span className={`font-mono text-[10px] ${fgSub}`}>{p.code}</span>
-                      )}
-                    </div>
-                    {/* Price pill */}
-                    {p.particular != null && (
-                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${btnBg} ${fg}`}>
-                        {formatCLP(p.particular)}
-                      </span>
-                    )}
-                    {/* Add button — stop propagation so clicking it doesn't also toggle */}
-                    <button
-                      onClick={(ev) => { ev.stopPropagation(); addProfile(p); }}
-                      disabled={inCart}
-                      className={`shrink-0 flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold backdrop-blur transition disabled:opacity-50 ${btnBg} ${fg}`}
-                    >
-                      {inCart ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
-                      {inCart ? "Agregado" : "Agregar"}
-                    </button>
-                  </div>
-
-                  {/* ── Accordion body (items + note + FONASA prices) ── */}
-                  {isOpen && (
-                    <div className="px-3 py-2.5">
-                      <div className="flex flex-wrap gap-1">
-                        {p.items.map((it) => (
-                          <span
-                            key={it.name + (it.code ?? "")}
-                            className="inline-flex items-center gap-1 rounded bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground"
-                          >
-                            <span className="max-w-[120px] truncate">{it.name}</span>
-                            {it.code && (
-                              <span className="shrink-0 font-mono text-[9px] opacity-55">{it.code}</span>
-                            )}
-                          </span>
-                        ))}
-                      </div>
-                      {p.note && (
-                        <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] italic text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
-                          {p.note}
-                        </p>
-                      )}
-                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-muted-foreground">
-                        {p.fonasa_a != null && (
-                          <span>FONASA A <b className="text-foreground">{formatCLP(p.fonasa_a)}</b></span>
-                        )}
-                        {p.fonasa_bcd != null && (
-                          <span>FONASA B/C/D <b className="text-foreground">{formatCLP(p.fonasa_bcd)}</b></span>
-                        )}
-                        {p.particular == null && (
-                          <span className="font-semibold text-primary">Valor a confirmar en atención</span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          {/* Collapsible body */}
+          {profilesOpen && (
+            <div className="border-t border-border px-5 pb-5 pt-4">
+              <p className="mb-3 text-xs text-muted-foreground">
+                Haz clic en "Agregar" para incluir el perfil en la cotización.
+              </p>
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                {labProfiles.map((p) => <ProfileCard key={p.name} p={p} cart={cart} onAdd={addProfile} />)}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Catalog */}
+        {/* ── Catalog ── */}
         <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
           <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">Catálogo de laboratorio</h3>
           <div className="relative">
@@ -219,21 +145,13 @@ export function LabQuoter() {
 
             {soloResults.length > 0 && (
               <>
-                {/* Single accordion toggle for ALL solo particulares */}
-                <button
-                  onClick={() => setSoloOpen((v) => !v)}
-                  className="sticky top-0 z-10 flex w-full items-center gap-2 rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-left transition hover:bg-orange-100 dark:border-orange-700 dark:bg-orange-950/40 dark:hover:bg-orange-950/60"
-                >
-                  <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-orange-600 transition-transform duration-200 dark:text-orange-400 ${soloOpen ? "rotate-180" : ""}`} />
-                  <AlertCircle className="h-3.5 w-3.5 shrink-0 text-orange-600 dark:text-orange-400" />
-                  <p className="flex-1 text-[11px] font-semibold text-orange-700 dark:text-orange-400">
+                <div className="flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 dark:border-orange-700 dark:bg-orange-950/40">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0 text-orange-500 dark:text-orange-400" />
+                  <p className="text-[11px] font-semibold text-orange-700 dark:text-orange-400">
                     Solo Particulares — Exámenes externos ({soloResults.length})
                   </p>
-                  <span className="text-[10px] text-orange-500 dark:text-orange-500">
-                    {soloOpen ? "Ocultar" : "Ver todos"}
-                  </span>
-                </button>
-                {soloOpen && <ExamList items={soloResults} cart={cart} onAdd={add} isSolo />}
+                </div>
+                <ExamList items={soloResults} cart={cart} onAdd={add} isSolo />
               </>
             )}
           </div>
@@ -368,6 +286,68 @@ export function LabQuoter() {
   );
 }
 
+/* ── Profile card (always shows items, no individual accordion) ─────────────── */
+
+function ProfileCard({ p, cart, onAdd }: { p: LabProfile; cart: LabExam[]; onAdd: (p: LabProfile) => void }) {
+  const cartKey = p.code ?? `PERFIL-${p.name}`;
+  const inCart = cart.some((c) => c.code === cartKey);
+  const fg = p.textDark ? "text-gray-900" : "text-white";
+  const fgSub = p.textDark ? "text-gray-800/70" : "text-white/80";
+  const btnBg = p.textDark ? "bg-black/15 hover:bg-black/25" : "bg-white/25 hover:bg-white/40";
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-background">
+      {/* Header */}
+      <div className="flex min-w-0 items-center justify-between gap-2 px-3 py-2.5" style={{ backgroundColor: p.tint }}>
+        <div className="min-w-0 flex-1">
+          <span className={`block truncate text-xs font-bold drop-shadow-sm ${fg}`}>{p.name}</span>
+          {p.code && /^\d/.test(p.code) && (
+            <span className={`font-mono text-[10px] ${fgSub}`}>{p.code}</span>
+          )}
+        </div>
+        {p.particular != null && (
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${btnBg} ${fg}`}>
+            {formatCLP(p.particular)}
+          </span>
+        )}
+        <button
+          onClick={() => onAdd(p)}
+          disabled={inCart}
+          className={`shrink-0 flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold backdrop-blur transition disabled:opacity-50 ${btnBg} ${fg}`}
+        >
+          {inCart ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+          {inCart ? "Agregado" : "Agregar"}
+        </button>
+      </div>
+
+      {/* Items + prices */}
+      <div className="px-3 py-2">
+        <div className="flex flex-wrap gap-1">
+          {p.items.map((it) => (
+            <span
+              key={it.name + (it.code ?? "")}
+              className="inline-flex items-center gap-1 rounded bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground"
+            >
+              <span className="max-w-[120px] truncate">{it.name}</span>
+              {it.code && <span className="shrink-0 font-mono text-[9px] opacity-55">{it.code}</span>}
+            </span>
+          ))}
+        </div>
+        {p.note && (
+          <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] italic text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+            {p.note}
+          </p>
+        )}
+        <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-muted-foreground">
+          {p.fonasa_a != null && <span>FONASA A <b className="text-foreground">{formatCLP(p.fonasa_a)}</b></span>}
+          {p.fonasa_bcd != null && <span>FONASA B/C/D <b className="text-foreground">{formatCLP(p.fonasa_bcd)}</b></span>}
+          {p.particular == null && <span className="font-semibold text-primary">Valor a confirmar</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Catalog exam list ──────────────────────────────────────────────────────── */
 
 function ExamList({
@@ -392,18 +372,13 @@ function ExamList({
         if (isSolo) cardCls = "border-orange-200 bg-orange-50/40 dark:border-orange-800/60 dark:bg-orange-950/20";
         else if (isBoleta) cardCls = "border-amber-200 bg-amber-50/40 dark:border-amber-800 dark:bg-amber-950/10";
 
-        let nameCls = "text-foreground";
-        if (isSolo) nameCls = "text-orange-700 dark:text-orange-400";
-
+        const nameCls = isSolo ? "text-orange-700 dark:text-orange-400" : "text-foreground";
         let codeCls = "bg-secondary text-secondary-foreground";
         if (isSolo) codeCls = "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400";
         else if (isBoleta) codeCls = "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300";
 
         return (
-          <div
-            key={e.code}
-            className={`flex items-start gap-3 rounded-xl border p-3 ${cardCls} ${blocked ? "opacity-50" : ""}`}
-          >
+          <div key={e.code} className={`flex items-start gap-3 rounded-xl border p-3 ${cardCls} ${blocked ? "opacity-50" : ""}`}>
             <span className={`mt-0.5 shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold ${codeCls}`}>
               {e.code}
             </span>
@@ -412,32 +387,20 @@ function ExamList({
                 {cleanName(e.name)}
               </p>
               <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
-                {!blocked && (
+                {!blocked ? (
                   <>
-                    {e.fonasa_a != null && (
-                      <span>FONASA A <b className="text-foreground">{formatCLP(e.fonasa_a)}</b></span>
-                    )}
-                    {e.fonasa_bcd != null && (
-                      <span>FONASA B/C/D <b className="text-foreground">{formatCLP(e.fonasa_bcd)}</b></span>
-                    )}
+                    {e.fonasa_a != null && <span>FONASA A <b className="text-foreground">{formatCLP(e.fonasa_a)}</b></span>}
+                    {e.fonasa_bcd != null && <span>FONASA B/C/D <b className="text-foreground">{formatCLP(e.fonasa_bcd)}</b></span>}
                     {e.particular > 0 && (
-                      <span>
-                        Particular{" "}
-                        <b className={isSolo ? "text-orange-700 dark:text-orange-400" : "text-foreground"}>
-                          {formatCLP(e.particular)}
-                        </b>
-                      </span>
+                      <span>Particular <b className={isSolo ? "text-orange-700 dark:text-orange-400" : "text-foreground"}>{formatCLP(e.particular)}</b></span>
+                    )}
+                    {isBoleta && (
+                      <span className="rounded bg-amber-100 px-1.5 font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">BOLETA</span>
                     )}
                   </>
-                )}
-                {blocked && (
+                ) : (
                   <span className="rounded bg-slate-100 px-1.5 font-semibold text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
                     No disponible
-                  </span>
-                )}
-                {isBoleta && !blocked && (
-                  <span className="rounded bg-amber-100 px-1.5 font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                    BOLETA
                   </span>
                 )}
               </div>
