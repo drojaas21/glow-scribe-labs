@@ -349,18 +349,26 @@ export function ExamQuoter() {
           {cart.length > 0 && (
             <div className="mt-4 space-y-2">
               {totalDiscount > 0 && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Descuento total convenio</span>
-                  <span className="font-semibold text-green-600 dark:text-green-400">−{formatCLP(totalDiscount)}</span>
-                </div>
-              )}
-              <div className="rounded-xl bg-gradient-brand px-4 py-3.5 text-primary-foreground shadow-[var(--shadow-lift)]">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-medium opacity-90">Total a pagar ({previsionLabel})</span>
-                    <p className="text-[10px] opacity-70">{convenioMeta[convenio]}</p>
+                <>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal sin descuento</span>
+                    <span className="text-muted-foreground line-through">{formatCLP(grandTotal + totalDiscount)}</span>
                   </div>
-                  <span className="text-2xl font-bold tracking-tight">{formatCLP(grandTotal)}</span>
+                  <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm dark:border-green-800 dark:bg-green-950/30">
+                    <span className="font-semibold text-green-700 dark:text-green-400">
+                      Descuento {convenioMeta[convenio]}
+                    </span>
+                    <span className="text-lg font-bold text-green-700 dark:text-green-400">−{formatCLP(totalDiscount)}</span>
+                  </div>
+                </>
+              )}
+              <div className="rounded-xl bg-gradient-brand px-4 py-4 text-primary-foreground shadow-[var(--shadow-lift)]">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[11px] font-medium opacity-90">Total a pagar</span>
+                    <p className="text-[10px] opacity-70">{previsionLabel} · {convenioMeta[convenio]}</p>
+                  </div>
+                  <span className="text-3xl font-bold tracking-tight">{formatCLP(grandTotal)}</span>
                 </div>
               </div>
             </div>

@@ -214,20 +214,25 @@ export function LabQuoter() {
             </div>
           )}
 
-          <div className="mt-4 space-y-2">
-            <div className="flex items-center justify-between border-b border-dashed border-border pb-2 text-sm">
-              <span className="text-muted-foreground">Total FONASA A</span>
-              <span className="font-semibold text-foreground">{formatCLP(totalFonasaA)}</span>
+          {/* Three totals — always visible */}
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="rounded-xl border bg-secondary/40 p-2.5 text-center">
+              <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">FONASA A</p>
+              <p className="mt-1 text-sm font-bold text-foreground">{formatCLP(totalFonasaA)}</p>
             </div>
-            <div className="flex items-center justify-between border-b border-dashed border-border pb-2 text-sm">
-              <span className="text-muted-foreground">Total FONASA B / C / D</span>
-              <span className="font-semibold text-foreground">{formatCLP(totalFonasaBcd)}</span>
+            <div className="rounded-xl border bg-secondary/40 p-2.5 text-center">
+              <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">FONASA B/C/D</p>
+              <p className="mt-1 text-sm font-bold text-foreground">{formatCLP(totalFonasaBcd)}</p>
+            </div>
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-2.5 text-center">
+              <p className="text-[9px] font-bold uppercase tracking-wide text-primary">PARTICULAR</p>
+              <p className="mt-1 text-sm font-bold text-foreground">{formatCLP(totalPart)}</p>
             </div>
           </div>
-          <div className="mt-3 rounded-xl bg-gradient-brand px-4 py-3.5 text-primary-foreground shadow-[var(--shadow-lift)]">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium opacity-90">Total particular</span>
-              <span className="text-2xl font-bold tracking-tight">{formatCLP(totalPart)}</span>
+          <div className="mt-3 rounded-xl bg-gradient-brand px-4 py-4 text-primary-foreground shadow-[var(--shadow-lift)]">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-medium opacity-90">Total</span>
+              <span className="text-3xl font-bold tracking-tight">{formatCLP(totalPart)}</span>
             </div>
           </div>
         </div>

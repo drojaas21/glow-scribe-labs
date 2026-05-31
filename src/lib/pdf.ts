@@ -135,15 +135,15 @@ export function generateExamPDF(args: {
   }
 
   doc.setFillColor(...BRAND_DARK);
-  doc.roundedRect(15, y, 180, 18, 2, 2, "F");
+  doc.roundedRect(15, y, 180, 22, 2, 2, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.text("VALOR TOTAL A PAGAR", 22, y + 11);
+  doc.setFontSize(9);
+  doc.text("VALOR TOTAL A PAGAR", 22, y + 8);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text(formatCLP(args.grandTotal), 188, y + 12, { align: "right" });
-  y += 28;
+  doc.setFontSize(20);
+  doc.text(formatCLP(args.grandTotal), 188, y + 16, { align: "right" });
+  y += 32;
 
   if (args.recommendations.trim()) {
     doc.setTextColor(...BRAND_DARK);
@@ -204,20 +204,39 @@ export function generateLabPDF(args: {
   // @ts-expect-error lastAutoTable injected by plugin
   let yy = doc.lastAutoTable.finalY + 8;
 
-  doc.setFillColor(241, 247, 252);
-  doc.setDrawColor(...BRAND);
-  doc.roundedRect(110, yy, 85, 30, 2, 2, "FD");
-  doc.setTextColor(...BRAND_DARK);
-  doc.setFontSize(8.5);
+  // Three totals side by side
+  const colW = 58;
+  const totals = [
+    { label: "FONASA A", value: formatCLP(totalFonasaA) },
+    { label: "FONASA B/C/D", value: formatCLP(totalFonasaBcd) },
+    { label: "PARTICULAR", value: formatCLP(totalPart) },
+  ];
+  totals.forEach((t, i) => {
+    const x = 15 + i * (colW + 2);
+    const isLast = i === 2;
+    doc.setFillColor(isLast ? 25 : 241, isLast ? 96 : 247, isLast ? 165 : 252);
+    doc.setDrawColor(...BRAND);
+    doc.roundedRect(x, yy, colW, 22, 2, 2, isLast ? "F" : "FD");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(isLast ? 255 : 80, isLast ? 255 : 80, isLast ? 255 : 80);
+    doc.text(t.label, x + colW / 2, yy + 7, { align: "center" });
+    doc.setFontSize(11);
+    doc.text(t.value, x + colW / 2, yy + 17, { align: "center" });
+  });
+  yy += 30;
+
+  // Big total box
+  doc.setFillColor(...BRAND_DARK);
+  doc.roundedRect(15, yy, 180, 22, 2, 2, "F");
+  doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "normal");
-  doc.text("Total FONASA A", 115, yy + 8);
-  doc.text("Total FONASA B/C/D", 115, yy + 16);
-  doc.text("Total Particular", 115, yy + 24);
+  doc.setFontSize(9);
+  doc.text("TOTAL A PAGAR (PARTICULAR)", 22, yy + 8);
   doc.setFont("helvetica", "bold");
-  doc.text(formatCLP(totalFonasaA), 190, yy + 8, { align: "right" });
-  doc.text(formatCLP(totalFonasaBcd), 190, yy + 16, { align: "right" });
-  doc.text(formatCLP(totalPart), 190, yy + 24, { align: "right" });
-  yy += 38;
+  doc.setFontSize(20);
+  doc.text(formatCLP(totalPart), 188, yy + 16, { align: "right" });
+  yy += 32;
 
   doc.setFillColor(255, 251, 235);
   doc.setDrawColor(245, 158, 11);
