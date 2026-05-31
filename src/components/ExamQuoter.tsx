@@ -267,16 +267,34 @@ export function ExamQuoter() {
             )}
           </div>
 
-          <label className="mt-4 block">
-            <span className="mb-1 block text-xs font-semibold text-foreground">Copago base de la previsión</span>
-            <input
-              inputMode="numeric"
-              value={copago}
-              onChange={(e) => setCopago(e.target.value)}
-              placeholder="$0"
-              className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
-            />
-          </label>
+          <div className="mt-4">
+            <span className="mb-1.5 block text-xs font-semibold text-foreground">Previsión del paciente</span>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { key: "particular", label: "Particular" },
+                { key: "fa", label: "FONASA A" },
+                { key: "fbcd", label: "FONASA B/C/D" },
+              ] as const).map((p) => {
+                const isSel = prevision === p.key;
+                return (
+                  <button
+                    key={p.key}
+                    onClick={() => setPrevision(p.key)}
+                    className={`rounded-xl border px-2 py-2.5 text-center text-[11px] font-semibold transition-all ${
+                      isSel
+                        ? "border-transparent bg-gradient-brand text-primary-foreground shadow-[var(--shadow-lift)]"
+                        : "border-border bg-background text-foreground hover:border-primary/40"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              El copago se calcula automáticamente según la previsión seleccionada.
+            </p>
+          </div>
 
           {/* results */}
           <div className="mt-4 space-y-2">
