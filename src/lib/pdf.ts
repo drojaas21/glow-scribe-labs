@@ -22,7 +22,10 @@ function header(doc: jsPDF, title: string) {
   doc.text(title, 15, 22);
   const now = new Date();
   doc.setFontSize(8);
-  doc.text(now.toLocaleDateString("es-CL") + " " + now.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }), 195, 14, { align: "right" });
+  doc.text(
+    now.toLocaleDateString("es-CL") + " " + now.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }),
+    195, 14, { align: "right" }
+  );
 }
 
 function patientBox(doc: jsPDF, y: number, name: string, rut: string) {
@@ -46,50 +49,91 @@ function footer(doc: jsPDF) {
   doc.setTextColor(130, 130, 130);
   doc.text(
     "Cotización referencial sujeta a confirmación. Los valores pueden variar según indicación médica.",
-    105,
-    288,
-    { align: "center" }
+    105, 288, { align: "center" }
   );
 }
 
-export function generateExamPDF(args: {
+// ── Imagenología PDF (multi-exam cart) ────────────────────────────────────────
+
+export type ExamCartPDFItem = {
   exam: Exam;
   category: ExamCategory;
+  qty: number;
+  baseUnit: number;
+  discountPct: number;
+  discountAmt: number;
+  discountedUnit: number;
+  lineTotal: number;
+};
+
+export function generateExamPDF(args: {
+  items: ExamCartPDFItem[];
   convenio: Convenio;
   prevision: string;
-  copagoBase: number;
-  copagoFinal: number;
-  descuento: number;
-  porcentaje: number;
-  totalBoleta: number;
+  grandTotal: number;
   patientName: string;
   patientRut: string;
   recommendations: string;
 }) {
   const doc = new jsPDF();
-  header(doc, "Cotización de Examen de Imagenología");
+  header(doc, "Cotización de Exámenes de Imagenología");
   let y = patientBox(doc, 38, args.patientName, args.patientRut);
+
+  // Info row
+  doc.setFillColor(241, 247, 252);
+  doc.setDrawColor(...BRAND);
+  doc.roundedRect(15, y, 180, 12, 2, 2, "FD");
+  doc.setTextColor(...BRAND_DARK);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.text("Previsión:", 20, y + 8);
+  doc.text("Convenio:", 90, y + 8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(40, 40, 40);
+  doc.text(args.prevision, 48, y + 8);
+  doc.text(convenioMeta[args.convenio], 115, y + 8);
+  y += 18;
 
   autoTable(doc, {
     startY: y,
-    head: [["Detalle de la cotización", ""]],
-    body: [
-      ["Tipo de examen", categoryMeta[args.category].label],
-      ["Examen", args.exam.name],
-      ["Previsión", args.prevision],
-      ["Convenio comercial", convenioMeta[args.convenio]],
-      ["Copago según previsión", formatCLP(args.copagoBase)],
-      ["Descuento por convenio", args.porcentaje > 0 ? `${args.porcentaje}%  (-${formatCLP(args.descuento)})` : "Sin descuento"],
-    ],
+    head: [["Tipo", "Examen", "Cant.", `Precio (${args.prevision})`, "Dto.", "Subtotal"]],
+    body: args.items.map((it) => [
+      categoryMeta[it.category].short,
+      it.exam.name,
+      String(it.qty),
+      formatCLP(it.baseUnit),
+      it.discountPct > 0 ? `${it.discountPct}%` : "—",
+      formatCLP(it.lineTotal),
+    ]),
     theme: "striped",
     headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold" },
-    columnStyles: { 0: { fontStyle: "bold", cellWidth: 70, textColor: BRAND_DARK } },
-    styles: { fontSize: 10, cellPadding: 3.5 },
+    columnStyles: {
+      0: { cellWidth: 14, fontStyle: "bold", textColor: BRAND_DARK },
+      2: { halign: "center", cellWidth: 14 },
+      3: { halign: "right", cellWidth: 30 },
+      4: { halign: "center", cellWidth: 16, textColor: [22, 163, 74] },
+      5: { halign: "right", cellWidth: 30, fontStyle: "bold" },
+    },
+    styles: { fontSize: 8.5, cellPadding: 2.5 },
   });
 
-  // total box
   // @ts-expect-error lastAutoTable injected by plugin
   y = doc.lastAutoTable.finalY + 8;
+
+  const totalBefore = args.items.reduce((s, it) => s + it.baseUnit * it.qty, 0);
+  const totalSaved = totalBefore - args.grandTotal;
+
+  if (totalSaved > 0) {
+    doc.setFillColor(240, 253, 244);
+    doc.setDrawColor(22, 163, 74);
+    doc.roundedRect(15, y, 180, 10, 2, 2, "FD");
+    doc.setTextColor(22, 163, 74);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.text(`Ahorro por convenio ${convenioMeta[args.convenio]}: ${formatCLP(totalSaved)}`, 105, y + 7, { align: "center" });
+    y += 16;
+  }
+
   doc.setFillColor(...BRAND_DARK);
   doc.roundedRect(15, y, 180, 18, 2, 2, "F");
   doc.setTextColor(255, 255, 255);
@@ -98,7 +142,7 @@ export function generateExamPDF(args: {
   doc.text("VALOR TOTAL A PAGAR", 22, y + 11);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.text(formatCLP(args.totalBoleta), 188, y + 12, { align: "right" });
+  doc.text(formatCLP(args.grandTotal), 188, y + 12, { align: "right" });
   y += 28;
 
   if (args.recommendations.trim()) {
@@ -115,8 +159,11 @@ export function generateExamPDF(args: {
   }
 
   footer(doc);
-  doc.save(`Cotizacion_${args.exam.name.slice(0, 24).replace(/[^a-zA-Z0-9]/g, "_")}.pdf`);
+  const firstName = args.items[0]?.exam.name.slice(0, 20).replace(/[^a-zA-Z0-9]/g, "_") ?? "Examen";
+  doc.save(`Cotizacion_${firstName}.pdf`);
 }
+
+// ── Laboratorio PDF ────────────────────────────────────────────────────────────
 
 export function generateLabPDF(args: {
   items: LabExam[];
@@ -146,7 +193,7 @@ export function generateLabPDF(args: {
     headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold" },
     columnStyles: {
       0: { cellWidth: 22, fontStyle: "bold", textColor: BRAND_DARK },
-      2: { cellWidth: 22, fontSize: 7.5, textColor: [160, 100, 20] },
+      2: { cellWidth: 20, fontSize: 7.5, textColor: [160, 100, 20] },
       3: { halign: "right", cellWidth: 26 },
       4: { halign: "right", cellWidth: 26 },
       5: { halign: "right", cellWidth: 26 },
@@ -172,18 +219,16 @@ export function generateLabPDF(args: {
   doc.text(formatCLP(totalPart), 190, yy + 24, { align: "right" });
   yy += 38;
 
-  // Blood sample note
   doc.setFillColor(255, 251, 235);
   doc.setDrawColor(245, 158, 11);
-  doc.roundedRect(15, yy, 180, 10, 2, 2, "FD");
+  doc.roundedRect(15, yy, 180, 12, 2, 2, "FD");
   doc.setTextColor(120, 75, 10);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   const noteLines = doc.splitTextToSize(bloodSampleNote, 174);
-  doc.text(noteLines, 18, yy + 6);
-  yy += 16;
+  doc.text(noteLines, 18, yy + 7);
+  yy += 18;
 
-  // Preparation section
   doc.setTextColor(...BRAND_DARK);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9.5);
@@ -195,11 +240,12 @@ export function generateLabPDF(args: {
   doc.setTextColor(60, 60, 60);
   doc.text("Horario de toma de muestras:", 15, yy + 5);
   doc.setFont("helvetica", "normal");
-  doc.text(`• ${scheduleInfo.weekdays}`, 15, yy + 10);
-  doc.text(`• ${scheduleInfo.saturday}`, 15, yy + 15);
-  yy += 20;
+  doc.text(`• ${scheduleInfo.weekdays}`, 15, yy + 11);
+  doc.text(`• ${scheduleInfo.saturday}`, 15, yy + 17);
+  yy += 23;
 
   for (const note of preparationNotes) {
+    if (yy > 265) break;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.5);
     doc.setTextColor(60, 60, 60);
@@ -208,7 +254,6 @@ export function generateLabPDF(args: {
     const lines = doc.splitTextToSize(`• ${note.text}`, 180);
     doc.text(lines, 15, yy + 5);
     yy += 5 + lines.length * 4.5;
-    if (yy > 265) break;
   }
 
   footer(doc);

@@ -7,17 +7,21 @@ export type LabProfile = {
   name: string;
   code: string | null;
   tint: string;
+  textDark?: boolean;
   fonasa_a: number | null;
+  fonasa_bcd?: number | null;
   particular: number | null;
   items: LabProfileItem[];
+  note?: string;
 };
 
 export const labProfiles: LabProfile[] = [
   {
     name: "Perfil Bioquímico",
     code: "0302075",
-    tint: "var(--chart-1)",
+    tint: "#f97316",
     fonasa_a: 11650,
+    fonasa_bcd: 7170,
     particular: 13397,
     items: [
       { name: "Glicemia", code: "0302047" },
@@ -38,8 +42,9 @@ export const labProfiles: LabProfile[] = [
   {
     name: "Perfil Hepático",
     code: "0302076",
-    tint: "var(--chart-4)",
+    tint: "#0ea5e9",
     fonasa_a: 13640,
+    fonasa_bcd: 8390,
     particular: 15686,
     items: [
       { name: "Transaminasa GOT", code: "0302063" },
@@ -56,8 +61,10 @@ export const labProfiles: LabProfile[] = [
   {
     name: "Perfil Lipídico",
     code: "0302034",
-    tint: "var(--chart-5)",
+    tint: "#eab308",
+    textDark: true,
     fonasa_a: 8290,
+    fonasa_bcd: 5100,
     particular: 9534,
     items: [
       { name: "Colesterol total", code: "0302067" },
@@ -71,12 +78,13 @@ export const labProfiles: LabProfile[] = [
   {
     name: "Perfil Renal",
     code: "PERFIL RENAL",
-    tint: "var(--chart-2)",
+    tint: "#0f172a",
     fonasa_a: 12480,
+    fonasa_bcd: 7670,
     particular: 14352,
     items: [
       { name: "Microalbuminuria", code: "0309013" },
-      { name: "Electrolitos (Na, K, Cl) ×3", code: "0302032" },
+      { name: "Electrolitos Na/K/Cl ×3", code: "0302032" },
       { name: "Nitrógeno ureico", code: "0302057" },
       { name: "Creatinina en suero", code: "0302023" },
     ],
@@ -84,8 +92,9 @@ export const labProfiles: LabProfile[] = [
   {
     name: "Perfil Tiroideo",
     code: "PERFIL TIROIDE",
-    tint: "var(--chart-3)",
+    tint: "#16a34a",
     fonasa_a: 25270,
+    fonasa_bcd: 15550,
     particular: 29061,
     items: [
       { name: "TSH", code: "0303024" },
@@ -95,21 +104,11 @@ export const labProfiles: LabProfile[] = [
     ],
   },
   {
-    name: "Perfil de Coagulación",
-    code: null,
-    tint: "var(--chart-1)",
-    fonasa_a: null,
-    particular: null,
-    items: [
-      { name: "Tiempo de protrombina (TP/INR)", code: "0301059" },
-      { name: "Tromboplastina (TTPA)", code: "0301085" },
-    ],
-  },
-  {
     name: "HOMA",
     code: "HOMA",
-    tint: "var(--chart-2)",
+    tint: "#64748b",
     fonasa_a: 8490,
+    fonasa_bcd: 5220,
     particular: 9763,
     items: [
       { name: "Glucosa en sangre", code: "0302047" },
@@ -117,10 +116,24 @@ export const labProfiles: LabProfile[] = [
     ],
   },
   {
+    name: "Cinética del Fierro",
+    code: null,
+    tint: "#1e3a5f",
+    fonasa_a: 21510,
+    fonasa_bcd: 14040,
+    particular: 24736,
+    items: [
+      { name: "Ferritina", code: "0301026" },
+      { name: "Transferrina", code: "0301082" },
+      { name: "TIBC", code: "0301029" },
+    ],
+  },
+  {
     name: "RAC (Microalbuminuria / Creatinuria)",
     code: "RAC",
-    tint: "var(--chart-5)",
+    tint: "#fb7185",
     fonasa_a: 5850,
+    fonasa_bcd: 3590,
     particular: 6727,
     items: [
       { name: "Microalbuminuria", code: "0309013" },
@@ -128,21 +141,101 @@ export const labProfiles: LabProfile[] = [
     ],
   },
   {
+    name: "Insulina Post Pandrial",
+    code: null,
+    tint: "#15803d",
+    fonasa_a: 16020,
+    fonasa_bcd: 9280,
+    particular: 18422,
+    note: "No se vende líquido. Paciente debe traer desayuno (café/té con leche, pan con mermelada o trozo de pastel). Si es diabético, tomar su desayuno habitual.",
+    items: [
+      { name: "Venosa adultos ×2", code: "0307011" },
+      { name: "Insulina basal ×2", code: "0303017" },
+    ],
+  },
+  {
+    name: "Insulina Post Carga",
+    code: null,
+    tint: "#475569",
+    fonasa_a: 19340,
+    fonasa_bcd: 11480,
+    particular: 22240,
+    note: "No se vende líquido. Paciente debe traer desayuno. Si es diabético, tomar su desayuno habitual.",
+    items: [
+      { name: "Venosa adultos ×2", code: "0307011" },
+      { name: "Insulina basal ×2", code: "0303017" },
+      { name: "Glucosa ×2", code: "0302047" },
+    ],
+  },
+  {
+    name: "Glucosa Post Pandrial",
+    code: null,
+    tint: "#fde047",
+    textDark: true,
+    fonasa_a: 5680,
+    fonasa_bcd: 3320,
+    particular: 6532,
+    note: "No se vende líquido. Paciente debe traer desayuno. Si es diabético, tomar su desayuno habitual.",
+    items: [
+      { name: "Venosa adultos ×2", code: "0307011" },
+      { name: "Glucosa ×2", code: "0302047" },
+    ],
+  },
+  {
+    name: "Glucosa Post Carga",
+    code: null,
+    tint: "#ef4444",
+    fonasa_a: 5680,
+    fonasa_bcd: 3320,
+    particular: 6532,
+    note: "No se vende líquido.",
+    items: [
+      { name: "Venosa adultos ×2", code: "0307011" },
+      { name: "Glucosa ×2", code: "0302047" },
+    ],
+  },
+  {
+    name: "Anticuerpos Antitiroides",
+    code: "0305007 X2",
+    tint: "#0f172a",
+    fonasa_a: 16140,
+    fonasa_bcd: 9920,
+    particular: 18562,
+    items: [
+      { name: "Antiperoxidasa ATPO", code: "0305007" },
+      { name: "Anti-tiroglobulina ACCRE", code: "0305007" },
+    ],
+  },
+  {
+    name: "Perfil de Coagulación",
+    code: null,
+    tint: "#334155",
+    fonasa_a: null,
+    fonasa_bcd: null,
+    particular: null,
+    items: [
+      { name: "Tiempo de protrombina TP/INR", code: "0301059" },
+      { name: "Tromboplastina TTPA", code: "0301085" },
+    ],
+  },
+  {
     name: "GAME (Inmunoglobulinas)",
     code: "GAME",
-    tint: "var(--chart-3)",
+    tint: "#7c3aed",
     fonasa_a: 27740,
+    fonasa_bcd: 17060,
     particular: 31901,
     items: [
-      { name: "IgA, IgG, IgM (×3)", code: "0305027" },
+      { name: "IgA, IgG, IgM ×3", code: "0305027" },
       { name: "IgE total", code: "0305028" },
     ],
   },
   {
     name: "Perfil ENA",
     code: "0305138",
-    tint: "var(--chart-4)",
+    tint: "#4f46e5",
     fonasa_a: 139320,
+    fonasa_bcd: 69660,
     particular: 160218,
     items: [
       { name: "SM, RNP, SS-A/RO, SS-B/LA, SCL-70, JO-1 (×6)", code: "0305138" },

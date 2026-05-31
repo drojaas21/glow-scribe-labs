@@ -1,28 +1,12 @@
 import { useMemo, useState } from "react";
 import {
-  Brain,
-  ScanLine,
-  Waves,
-  Bone,
-  HeartPulse,
-  Droplets,
-  Activity,
-  Search,
-  X,
-  FileDown,
-  Check,
-  Stethoscope,
+  Brain, ScanLine, Waves, Bone, HeartPulse, Droplets, Activity,
+  Search, X, FileDown, Stethoscope, Plus, Minus, Trash2, ShoppingCart,
   type LucideIcon,
 } from "lucide-react";
 import {
-  examDatabase,
-  discountMatrix,
-  categoryMeta,
-  categoryOrder,
-  convenioMeta,
-  type Exam,
-  type ExamCategory,
-  type Convenio,
+  examDatabase, discountMatrix, categoryMeta, categoryOrder,
+  convenioMeta, type Exam, type ExamCategory, type Convenio,
 } from "@/data/catalog";
 import { formatCLP, normalize } from "@/lib/format";
 import { generateExamPDF } from "@/lib/pdf";
@@ -35,17 +19,20 @@ const convenioIcons: Record<Convenio, LucideIcon> = {
   caja: Building2,
   araucana: Users,
 };
+const icons: Record<string, LucideIcon> = { Brain, ScanLine, Waves, Bone, HeartPulse, Droplets, Activity };
 
-const icons: Record<string, LucideIcon> = {
-  Brain, ScanLine, Waves, Bone, HeartPulse, Droplets, Activity,
+export type CartItem = {
+  key: string;
+  category: ExamCategory;
+  index: number;
+  exam: Exam;
+  qty: number;
 };
-
-type Selected = { category: ExamCategory; index: number } | null;
 
 export function ExamQuoter() {
   const [activeCat, setActiveCat] = useState<ExamCategory | null>(null);
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<Selected>(null);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [convenio, setConvenio] = useState<Convenio>("particular");
   const [prevision, setPrevision] = useState<"particular" | "fa" | "fbcd">("particular");
   const [patientName, setPatientName] = useState("");
@@ -71,57 +58,67 @@ export function ExamQuoter() {
     return examDatabase[activeCat].map((exam, index) => ({ category: activeCat, index, exam }));
   }, [searchResults, activeCat]);
 
-  const selectedExam: Exam | null =
-    selected ? examDatabase[selected.category][selected.index] : null;
+  const addToCart = (category: ExamCategory, index: number, exam: Exam) => {
+    const key = `${category}::${index}`;
+    setCart((prev) => {
+      const existing = prev.find((c) => c.key === key);
+      if (existing) return prev.map((c) => c.key === key ? { ...c, qty: c.qty + 1 } : c);
+      return [...prev, { key, category, index, exam, qty: 1 }];
+    });
+  };
 
-  const calc = useMemo(() => {
-    if (!selected || !selectedExam) return null;
-    const base =
-      prevision === "particular"
-        ? selectedExam.part
-        : prevision === "fa"
-        ? selectedExam.fa
-        : selectedExam.fbcd;
-    const pct = discountMatrix[selected.category]?.[convenio] ?? 0;
-    const descuento = Math.round(base * (pct / 100));
-    const copagoFinal = Math.round(base - descuento);
-    return { base, pct, descuento, copagoFinal, totalBoleta: copagoFinal };
-  }, [selected, selectedExam, prevision, convenio]);
+  const changeQty = (key: string, delta: number) => {
+    setCart((prev) =>
+      prev
+        .map((c) => c.key === key ? { ...c, qty: Math.max(1, c.qty + delta) } : c)
+        .filter((c) => c.qty > 0)
+    );
+  };
 
-  const canPDF = !!(selected && calc);
+  const removeFromCart = (key: string) => setCart((prev) => prev.filter((c) => c.key !== key));
+
+  const getBasePrice = (exam: Exam) =>
+    prevision === "particular" ? exam.part : prevision === "fa" ? exam.fa : exam.fbcd;
+
+  const calcItem = (item: CartItem) => {
+    const base = getBasePrice(item.exam);
+    const pct = discountMatrix[item.category]?.[convenio] ?? 0;
+    const discountAmt = Math.round(base * (pct / 100));
+    const discountedUnit = base - discountAmt;
+    const lineTotal = discountedUnit * item.qty;
+    return { base, pct, discountAmt, discountedUnit, lineTotal };
+  };
+
+  const grandTotal = cart.reduce((s, item) => s + calcItem(item).lineTotal, 0);
+  const totalDiscount = cart.reduce((s, item) => {
+    const { discountAmt, base } = calcItem(item);
+    return s + discountAmt * item.qty;
+  }, 0);
 
   const previsionLabel =
     prevision === "particular" ? "Particular" : prevision === "fa" ? "FONASA A" : "FONASA B / C / D";
 
-  const autoRecs = selected ? categoryRecommendations[selected.category] : [];
+  const allRecs = [...new Set(
+    cart.flatMap((item) => categoryRecommendations[item.category] ?? [])
+  )];
 
   const handlePDF = () => {
-    if (!canPDF || !selectedExam || !selected || !calc) return;
+    if (cart.length === 0) return;
+    const pdfItems = cart.map((item) => {
+      const { base, pct, discountAmt, discountedUnit, lineTotal } = calcItem(item);
+      return { exam: item.exam, category: item.category, qty: item.qty, baseUnit: base, discountPct: pct, discountAmt, discountedUnit, lineTotal };
+    });
     const combined = [
-      ...autoRecs.map((r) => `• ${r}`),
+      ...allRecs.map((r) => `• ${r}`),
       ...(recommendations.trim() ? ["", recommendations.trim()] : []),
     ].join("\n");
-    generateExamPDF({
-      exam: selectedExam,
-      category: selected.category,
-      convenio,
-      prevision: previsionLabel,
-      copagoBase: calc.base,
-      copagoFinal: calc.copagoFinal,
-      descuento: calc.descuento,
-      porcentaje: calc.pct,
-      totalBoleta: calc.totalBoleta,
-      patientName,
-      patientRut,
-      recommendations: combined,
-    });
+    generateExamPDF({ items: pdfItems, convenio, prevision: previsionLabel, grandTotal, patientName, patientRut, recommendations: combined });
   };
-
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
       {/* LEFT: catalog */}
-      <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
+      <div className="min-w-0 rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
         <SectionTitle>Categoría de examen</SectionTitle>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           {categoryOrder.map((cat) => {
@@ -168,22 +165,16 @@ export function ExamQuoter() {
             </div>
           )}
           {searchResults && (
-            <p className="px-1 pb-1 text-xs font-medium text-muted-foreground">
-              {searchResults.length} resultado(s)
-            </p>
+            <p className="px-1 pb-1 text-xs font-medium text-muted-foreground">{searchResults.length} resultado(s)</p>
           )}
           {list.map(({ category, index, exam }) => {
-            const isSel = selected?.category === category && selected.index === index;
+            const key = `${category}::${index}`;
+            const cartItem = cart.find((c) => c.key === key);
             const meta = categoryMeta[category];
             return (
-              <button
-                key={category + index}
-                onClick={() => { setSelected({ category, index }); }}
-                className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-all ${
-                  isSel
-                    ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                    : "border-border bg-background hover:border-primary/40 hover:bg-secondary/40"
-                }`}
+              <div
+                key={key}
+                className="flex w-full items-start gap-3 rounded-xl border border-border bg-background p-3"
               >
                 <span
                   className="mt-0.5 inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
@@ -193,67 +184,65 @@ export function ExamQuoter() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-semibold leading-snug text-foreground">{exam.name}</span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground line-clamp-2">{exam.desc}</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground line-clamp-1">{exam.desc}</span>
+                  <span className="mt-1 block text-xs font-semibold text-foreground">{formatCLP(exam.part)} <span className="font-normal text-muted-foreground">particular</span></span>
                 </span>
-                <span className="shrink-0 text-right">
-                  <span className="block text-sm font-bold text-foreground">{formatCLP(exam.part)}</span>
-                  <span className="text-[10px] text-muted-foreground">particular</span>
-                </span>
-                {isSel && <Check className="mt-1 h-4 w-4 shrink-0 text-primary" />}
-              </button>
+                {cartItem ? (
+                  <div className="flex shrink-0 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-1.5 py-1">
+                    <button
+                      onClick={() => changeQty(key, -1)}
+                      className="flex h-6 w-6 items-center justify-center rounded-md bg-background text-foreground hover:bg-muted"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <span className="w-5 text-center text-sm font-bold text-primary">{cartItem.qty}</span>
+                    <button
+                      onClick={() => changeQty(key, 1)}
+                      className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground hover:opacity-90"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => addToCart(category, index, exam)}
+                    className="shrink-0 rounded-lg bg-primary p-2 text-primary-foreground transition hover:opacity-90"
+                    title="Agregar al carrito"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>
       </div>
 
-      {/* RIGHT: convenio + cálculo */}
-      <div className="space-y-5">
+      {/* RIGHT: convenio + cart + PDF */}
+      <div className="min-w-0 space-y-5">
+        {/* Convenio + Previsión */}
         <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
-          <SectionTitle>Convenio y copago</SectionTitle>
-
-          <div className="rounded-xl border border-dashed border-border bg-secondary/30 p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Examen seleccionado</p>
-            <p className={`mt-1 text-sm font-semibold ${selectedExam ? "text-foreground" : "text-muted-foreground"}`}>
-              {selectedExam ? selectedExam.name : "Ninguno"}
-            </p>
-            {selectedExam && (
-              <div className="mt-2 grid grid-cols-3 gap-2 text-center text-[11px]">
-                <div className="rounded-lg bg-background px-2 py-1.5">
-                  <p className="text-muted-foreground">Particular</p>
-                  <p className="font-bold text-foreground">{formatCLP(selectedExam.part)}</p>
-                </div>
-                <div className="rounded-lg bg-background px-2 py-1.5">
-                  <p className="text-muted-foreground">FONASA A</p>
-                  <p className="font-bold text-foreground">{formatCLP(selectedExam.fa)}</p>
-                </div>
-                <div className="rounded-lg bg-background px-2 py-1.5">
-                  <p className="text-muted-foreground">FONASA B/C/D</p>
-                  <p className="font-bold text-foreground">{formatCLP(selectedExam.fbcd)}</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-4">
+          <SectionTitle>Convenio y previsión</SectionTitle>
+          <div className="mb-4">
             <span className="mb-1.5 block text-xs font-semibold text-foreground">Convenio comercial</span>
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
               {(Object.keys(convenioMeta) as Convenio[]).map((c) => {
                 const Icon = convenioIcons[c];
-                const pct = selected ? discountMatrix[selected.category]?.[c] ?? 0 : 0;
                 const isSel = convenio === c;
+                const anyPct = cart.length > 0
+                  ? (discountMatrix[cart[0].category]?.[c] ?? 0)
+                  : 0;
                 return (
                   <button
                     key={c}
                     onClick={() => setConvenio(c)}
                     className={`relative flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-all ${
-                      isSel
-                        ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                        : "border-border bg-background hover:border-primary/40"
+                      isSel ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-border bg-background hover:border-primary/40"
                     }`}
                   >
                     {c !== "particular" && (
-                      <span className={`absolute right-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${pct > 0 ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
-                        {pct > 0 ? `-${pct}%` : "0%"}
+                      <span className={`absolute right-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${anyPct > 0 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-muted text-muted-foreground"}`}>
+                        {anyPct > 0 ? `-${anyPct}%` : "0%"}
                       </span>
                     )}
                     <Icon className={`h-5 w-5 ${isSel ? "text-primary" : "text-muted-foreground"}`} />
@@ -262,12 +251,9 @@ export function ExamQuoter() {
                 );
               })}
             </div>
-            {!selected && (
-              <p className="mt-1.5 text-[11px] text-muted-foreground">Selecciona un examen para ver el descuento de cada convenio.</p>
-            )}
           </div>
 
-          <div className="mt-4">
+          <div>
             <span className="mb-1.5 block text-xs font-semibold text-foreground">Previsión del paciente</span>
             <div className="grid grid-cols-3 gap-2">
               {([
@@ -291,27 +277,97 @@ export function ExamQuoter() {
                 );
               })}
             </div>
-            <p className="mt-1.5 text-[11px] text-muted-foreground">
-              El copago se calcula automáticamente según la previsión seleccionada.
-            </p>
-          </div>
-
-          {/* results */}
-          <div className="mt-4 space-y-2">
-            <ResultRow label={`Copago base (${previsionLabel})`} value={formatCLP(calc?.base ?? 0)} />
-            <ResultRow label="Descuento convenio" value={calc ? `${calc.pct}%` : "0%"} />
-            <ResultRow label="Monto descontado" value={formatCLP(calc?.descuento ?? 0)} />
-            <ResultRow label="Copago final" value={formatCLP(calc?.copagoFinal ?? 0)} />
-          </div>
-
-          <div className="mt-3 rounded-xl bg-gradient-brand px-4 py-3.5 text-primary-foreground shadow-[var(--shadow-lift)]">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium opacity-90">Valor total a pagar</span>
-              <span className="text-2xl font-bold tracking-tight">{formatCLP(calc?.totalBoleta ?? 0)}</span>
-            </div>
           </div>
         </div>
 
+        {/* Cart */}
+        <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-foreground">
+              <ShoppingCart className="h-4 w-4 text-primary" />
+              Carrito ({cart.reduce((s, c) => s + c.qty, 0)} unidad{cart.reduce((s, c) => s + c.qty, 0) !== 1 ? "es" : ""})
+            </h3>
+            {cart.length > 0 && (
+              <button onClick={() => setCart([])} className="text-xs font-medium text-destructive hover:underline">Vaciar</button>
+            )}
+          </div>
+
+          {cart.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
+              <ShoppingCart className="h-7 w-7 opacity-30" />
+              Agrega exámenes desde el catálogo.
+            </div>
+          ) : (
+            <div className="max-h-[280px] space-y-2 overflow-y-auto pr-1">
+              {cart.map((item) => {
+                const { base, pct, discountedUnit, lineTotal } = calcItem(item);
+                const meta = categoryMeta[item.category];
+                return (
+                  <div key={item.key} className="rounded-xl border border-border bg-background p-3">
+                    <div className="flex items-start gap-2">
+                      <span
+                        className="mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
+                        style={{ backgroundColor: meta.tint }}
+                      >
+                        {meta.short}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-semibold text-foreground">{item.exam.name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {formatCLP(base)} c/u
+                          {pct > 0 && <span className="ml-1 text-green-600 dark:text-green-400">−{pct}% → {formatCLP(discountedUnit)}</span>}
+                        </p>
+                      </div>
+                      <button onClick={() => removeFromCart(item.key)} className="shrink-0 text-muted-foreground hover:text-destructive">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-1.5 py-1">
+                        <button
+                          onClick={() => changeQty(item.key, -1)}
+                          className="flex h-5 w-5 items-center justify-center rounded text-foreground hover:bg-muted"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                        <span className="w-5 text-center text-xs font-bold text-foreground">{item.qty}</span>
+                        <button
+                          onClick={() => changeQty(item.key, 1)}
+                          className="flex h-5 w-5 items-center justify-center rounded bg-primary text-primary-foreground hover:opacity-90"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </div>
+                      <span className="text-sm font-bold text-foreground">{formatCLP(lineTotal)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {cart.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {totalDiscount > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Descuento total convenio</span>
+                  <span className="font-semibold text-green-600 dark:text-green-400">−{formatCLP(totalDiscount)}</span>
+                </div>
+              )}
+              <div className="rounded-xl bg-gradient-brand px-4 py-3.5 text-primary-foreground shadow-[var(--shadow-lift)]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-medium opacity-90">Total a pagar ({previsionLabel})</span>
+                    <p className="text-[10px] opacity-70">{convenioMeta[convenio]}</p>
+                  </div>
+                  <span className="text-2xl font-bold tracking-tight">{formatCLP(grandTotal)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Patient + recommendations + PDF */}
         <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
           <SectionTitle>Datos y recomendaciones</SectionTitle>
           <div className="grid grid-cols-2 gap-3">
@@ -321,13 +377,13 @@ export function ExamQuoter() {
               className="rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30" />
           </div>
 
-          {autoRecs.length > 0 && (
+          {allRecs.length > 0 && (
             <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
               <p className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-primary">
-                <Lightbulb className="h-3.5 w-3.5" /> Recordatorio automático · {categoryMeta[selected!.category].label}
+                <Lightbulb className="h-3.5 w-3.5" /> Recordatorios automáticos
               </p>
               <ul className="space-y-1">
-                {autoRecs.map((r) => (
+                {allRecs.map((r) => (
                   <li key={r} className="flex gap-1.5 text-[11px] leading-snug text-foreground">
                     <span className="mt-1 inline-block h-1 w-1 shrink-0 rounded-full bg-primary" />
                     {r}
@@ -338,13 +394,17 @@ export function ExamQuoter() {
           )}
 
           <span className="mb-1 mt-3 block text-xs font-semibold text-foreground">Notas adicionales (opcional)</span>
-          <textarea value={recommendations} onChange={(e) => setRecommendations(e.target.value)} rows={3}
+          <textarea
+            value={recommendations}
+            onChange={(e) => setRecommendations(e.target.value)}
+            rows={3}
             placeholder="Indicaciones adicionales para este paciente…"
-            className="w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30" />
+            className="w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
+          />
 
           <button
             onClick={handlePDF}
-            disabled={!canPDF}
+            disabled={cart.length === 0}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <FileDown className="h-4 w-4" /> Generar cotización PDF
@@ -357,13 +417,4 @@ export function ExamQuoter() {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">{children}</h3>;
-}
-
-function ResultRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between border-b border-dashed border-border pb-2 text-sm last:border-0">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-semibold text-foreground">{value}</span>
-    </div>
-  );
 }
