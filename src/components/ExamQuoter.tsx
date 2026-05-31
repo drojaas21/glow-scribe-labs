@@ -108,9 +108,10 @@ export function ExamQuoter() {
               <button
                 key={cat}
                 onClick={() => { setActiveCat(cat); setQuery(""); }}
+                style={active ? { backgroundImage: "var(--gradient-brand)" } : undefined}
                 className={`group flex flex-col items-center gap-2 rounded-xl border px-2 py-3 text-center transition-all ${
                   active
-                    ? "border-transparent bg-[var(--gradient-brand)] text-primary-foreground shadow-[var(--shadow-lift)]"
+                    ? "border-transparent text-primary-foreground shadow-[var(--shadow-lift)]"
                     : "border-border bg-secondary/40 text-secondary-foreground hover:border-primary/40 hover:bg-secondary"
                 }`}
               >
