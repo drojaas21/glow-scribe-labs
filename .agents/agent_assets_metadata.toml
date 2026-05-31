@@ -18,3 +18,9 @@ id = "97X5zKxm0BnuciAV7-25q"
 uri = "file://diagno-pro-local.zip"
 type = "unspecified"
 title = "DiagnoPRO — abre index.html directamente"
+
+[[outputs]]
+id = "vw8BfzISNvvO1Iv0Yc4Uy"
+uri = "file://diagno-pro-deploy.zip"
+type = "unspecified"
+title = "DiagnoPRO — listo para GitHub Pages / Netlify"
