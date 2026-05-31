@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "GmoMHFJivxRhGNl--_Hfz"
+uri = "file://diagno-pro-cotizador.zip"
+type = "unspecified"
+title = "DiagnoPRO Cotizador — archivos compilados"
