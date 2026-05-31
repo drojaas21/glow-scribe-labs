@@ -217,9 +217,19 @@ export function ExamQuoter() {
               {selectedExam ? selectedExam.name : "Ninguno"}
             </p>
             {selectedExam && (
-              <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-                <span>Particular <b className="text-foreground">{formatCLP(selectedExam.part)}</b></span>
-                <span>FONASA A <b className="text-foreground">{formatCLP(selectedExam.fa)}</b></span>
+              <div className="mt-2 grid grid-cols-3 gap-2 text-center text-[11px]">
+                <div className="rounded-lg bg-background px-2 py-1.5">
+                  <p className="text-muted-foreground">Particular</p>
+                  <p className="font-bold text-foreground">{formatCLP(selectedExam.part)}</p>
+                </div>
+                <div className="rounded-lg bg-background px-2 py-1.5">
+                  <p className="text-muted-foreground">FONASA A</p>
+                  <p className="font-bold text-foreground">{formatCLP(selectedExam.fa)}</p>
+                </div>
+                <div className="rounded-lg bg-background px-2 py-1.5">
+                  <p className="text-muted-foreground">FONASA B/C/D</p>
+                  <p className="font-bold text-foreground">{formatCLP(selectedExam.fbcd)}</p>
+                </div>
               </div>
             )}
           </div>
