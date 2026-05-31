@@ -298,6 +298,7 @@ export function ExamQuoter() {
 
           {/* results */}
           <div className="mt-4 space-y-2">
+            <ResultRow label={`Copago base (${previsionLabel})`} value={formatCLP(calc?.base ?? 0)} />
             <ResultRow label="Descuento convenio" value={calc ? `${calc.pct}%` : "0%"} />
             <ResultRow label="Monto descontado" value={formatCLP(calc?.descuento ?? 0)} />
             <ResultRow label="Copago final" value={formatCLP(calc?.copagoFinal ?? 0)} />
