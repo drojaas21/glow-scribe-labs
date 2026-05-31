@@ -86,8 +86,14 @@ export function ExamQuoter() {
 
   const canPDF = !!(selected && calc && calc.base > 0);
 
+  const autoRecs = selected ? categoryRecommendations[selected.category] : [];
+
   const handlePDF = () => {
     if (!canPDF || !selectedExam || !selected || !calc) return;
+    const combined = [
+      ...autoRecs.map((r) => `• ${r}`),
+      ...(recommendations.trim() ? ["", recommendations.trim()] : []),
+    ].join("\n");
     generateExamPDF({
       exam: selectedExam,
       category: selected.category,
@@ -99,9 +105,10 @@ export function ExamQuoter() {
       totalBoleta: calc.totalBoleta,
       patientName,
       patientRut,
-      recommendations,
+      recommendations: combined,
     });
   };
+
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
