@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   Brain, ScanLine, Waves, Bone, HeartPulse, Droplets, Activity,
   Search, X, FileDown, Stethoscope, Plus, Minus, Trash2, ShoppingCart,
+  AlertTriangle, Info,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -10,6 +11,7 @@ import {
 } from "@/data/catalog";
 import { formatCLP, normalize } from "@/lib/format";
 import { generateExamPDF } from "@/lib/pdf";
+import { needsCreatinineAlert, needsRMSafetyAlert } from "@/data/imagingPrep";
 import { Landmark, Building2, ShieldCheck, Users } from "lucide-react";
 
 const convenioIcons: Record<Convenio, LucideIcon> = {
@@ -37,6 +39,8 @@ export function ExamQuoter() {
   const [patientName, setPatientName] = useState("");
   const [patientRut, setPatientRut] = useState("");
   const [observations, setObservations] = useState("");
+  const [creatinineAlertDismissed, setCreatinineAlertDismissed] = useState(false);
+  const [rmAlertDismissed, setRmAlertDismissed] = useState(false);
 
   const searchResults = useMemo(() => {
     if (query.trim().length < 2) return null;
@@ -96,6 +100,9 @@ export function ExamQuoter() {
 
   const previsionLabel =
     prevision === "particular" ? "Particular" : prevision === "fa" ? "FONASA A" : "FONASA B / C / D";
+
+  const hasContrastExam = cart.some((item) => needsCreatinineAlert(item.category));
+  const hasRMExam = cart.some((item) => needsRMSafetyAlert(item.category));
 
   const handlePDF = () => {
     if (cart.length === 0) return;
@@ -279,9 +286,53 @@ export function ExamQuoter() {
               Carrito ({cart.reduce((s, c) => s + c.qty, 0)} unidad{cart.reduce((s, c) => s + c.qty, 0) !== 1 ? "es" : ""})
             </h3>
             {cart.length > 0 && (
-              <button onClick={() => setCart([])} className="text-xs font-medium text-destructive hover:underline">Vaciar</button>
+              <button
+                onClick={() => { setCart([]); setCreatinineAlertDismissed(false); setRmAlertDismissed(false); }}
+                className="text-xs font-medium text-destructive hover:underline"
+              >Vaciar</button>
             )}
           </div>
+
+          {/* ── Alertas clínicas ── */}
+          {hasContrastExam && !creatinineAlertDismissed && (
+            <div className="mb-3 flex gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs dark:border-amber-800/70 dark:bg-amber-950/30">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-amber-800 dark:text-amber-300">Verificación de función renal recomendada</p>
+                <p className="mt-0.5 leading-relaxed text-amber-700 dark:text-amber-400">
+                  Los exámenes con contraste iodado (TAC / Medio de Contraste) requieren Creatinina en sangre previa.
+                  Agregue este examen desde la pestaña <strong>Laboratorio</strong>.
+                </p>
+              </div>
+              <button
+                onClick={() => setCreatinineAlertDismissed(true)}
+                className="shrink-0 text-amber-400 hover:text-amber-600"
+                title="Cerrar"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
+          {hasRMExam && !rmAlertDismissed && (
+            <div className="mb-3 flex gap-2.5 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs dark:border-blue-800/70 dark:bg-blue-950/30">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-blue-800 dark:text-blue-300">Encuesta de seguridad RM obligatoria</p>
+                <p className="mt-0.5 leading-relaxed text-blue-700 dark:text-blue-400">
+                  El paciente debe completar la encuesta de seguridad al llegar. Informar sobre marcapasos,
+                  implantes metálicos, clips vasculares, stents u otros dispositivos.
+                </p>
+              </div>
+              <button
+                onClick={() => setRmAlertDismissed(true)}
+                className="shrink-0 text-blue-400 hover:text-blue-600"
+                title="Cerrar"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
 
           {cart.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">

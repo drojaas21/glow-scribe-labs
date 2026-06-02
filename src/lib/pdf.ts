@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatCLP } from "./format";
+import { getImagingPrep } from "@/data/imagingPrep";
 import type { Exam, ExamCategory, Convenio, LabExam } from "@/data/catalog";
 import { categoryMeta, convenioMeta } from "@/data/catalog";
 
@@ -85,6 +86,111 @@ export type ExamCartPDFItem = {
   lineTotal: number;
 };
 
+// ── Page / section helpers ────────────────────────────────────────────────────
+
+function checkPage(doc: jsPDF, y: number, needed: number, pageTitle: string): number {
+  if (y + needed > 276) {
+    doc.addPage();
+    doc.setFillColor(...BRAND_DARK);
+    doc.rect(0, 0, 210, 12, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text("DiagnoPRO Temuco · " + pageTitle, 15, 8);
+    return 18;
+  }
+  return y;
+}
+
+function prepSectionImaging(doc: jsPDF, y: number, items: ExamCartPDFItem[]): number {
+  const seen = new Set<string>();
+  const preps: { name: string; steps: string[]; postProtocol?: string }[] = [];
+  for (const item of items) {
+    const key = `${item.category}::${item.exam.name}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const p = getImagingPrep(item.exam.name, item.category);
+    preps.push({ name: item.exam.name, steps: p.steps, postProtocol: p.postProtocol });
+  }
+  if (preps.length === 0) return y;
+
+  y = checkPage(doc, y, 22, "Preparaciones Requeridas");
+  doc.setFillColor(...BRAND);
+  doc.rect(15, y, 180, 9, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.text("PREPARACIONES REQUERIDAS", 105, y + 6, { align: "center" });
+  y += 13;
+
+  for (const { name, steps, postProtocol } of preps) {
+    const estH = 10 + steps.length * 5 + (postProtocol ? 14 : 0);
+    y = checkPage(doc, y, estH, "Preparaciones Requeridas");
+
+    doc.setFillColor(241, 247, 252);
+    doc.setDrawColor(...BRAND);
+    doc.roundedRect(15, y, 180, 8, 1, 1, "FD");
+    doc.setTextColor(...BRAND_DARK);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.text(name, 18, y + 5.5);
+    y += 10;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(40, 40, 40);
+    for (const step of steps) {
+      y = checkPage(doc, y, 6, "Preparaciones Requeridas");
+      const lines = doc.splitTextToSize(`• ${step}`, 172);
+      doc.text(lines, 20, y);
+      y += lines.length * 4.5;
+    }
+
+    if (postProtocol) {
+      y = checkPage(doc, y, 16, "Preparaciones Requeridas");
+      y += 2;
+      const postLines = doc.splitTextToSize(`⚠  ${postProtocol}`, 166);
+      doc.setFillColor(255, 251, 235);
+      doc.setDrawColor(234, 179, 8);
+      doc.roundedRect(15, y, 180, postLines.length * 4.5 + 7, 1, 1, "FD");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(120, 80, 0);
+      doc.text(postLines, 19, y + 4.5);
+      y += postLines.length * 4.5 + 11;
+    }
+    y += 4;
+  }
+  return y;
+}
+
+function labPrepSection(doc: jsPDF, y: number): number {
+  y = checkPage(doc, y, 38, "Preparación de Laboratorio");
+  doc.setFillColor(...BRAND);
+  doc.rect(15, y, 180, 9, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.text("PREPARACIÓN DE LABORATORIO", 105, y + 6, { align: "center" });
+  y += 13;
+
+  const steps = [
+    "Ayuno mínimo 8 horas y máximo 12 horas (sólidos y líquidos). Última colación recomendada: 23:00 hrs del día anterior.",
+    "Traer cédula de identidad y orden médica.",
+    "Horario de toma de muestras: Lunes a viernes 08:00–12:00 hrs · Sábados 09:00–12:00 hrs.",
+  ];
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(40, 40, 40);
+  for (const step of steps) {
+    const lines = doc.splitTextToSize(`• ${step}`, 172);
+    doc.text(lines, 20, y);
+    y += lines.length * 4.5 + 1;
+  }
+  return y + 4;
+}
+
 export function generateExamPDF(args: {
   items: ExamCartPDFItem[];
   convenio: Convenio;
@@ -165,6 +271,7 @@ export function generateExamPDF(args: {
   y += 32;
 
   y = observationsBox(doc, y, args.observations);
+  prepSectionImaging(doc, y, args.items);
 
   footer(doc);
   const firstName = args.items[0]?.exam.name.slice(0, 20).replace(/[^a-zA-Z0-9]/g, "_") ?? "Examen";
@@ -260,6 +367,7 @@ export function generateLabPDF(args: {
   yy += 32;
 
   yy = observationsBox(doc, yy, args.observations);
+  labPrepSection(doc, yy);
 
   footer(doc);
   doc.save("Cotizacion_Laboratorio.pdf");
