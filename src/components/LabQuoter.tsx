@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
   Search, X, Plus, Trash2, FileDown, FlaskConical, Check,
   Layers, AlertCircle, ChevronDown,
@@ -29,9 +29,14 @@ const previsionOptions: { key: Prevision; label: string }[] = [
   { key: "fbcd", label: "FONASA B/C/D" },
 ];
 
-export function LabQuoter() {
+export function LabQuoter({
+  cart,
+  setCart,
+}: {
+  cart: LabExam[];
+  setCart: Dispatch<SetStateAction<LabExam[]>>;
+}) {
   const [query, setQuery] = useState("");
-  const [cart, setCart] = useState<LabExam[]>([]);
   const [prevision, setPrevision] = useState<Prevision>("particular");
   const [patientName, setPatientName] = useState("");
   const [patientRut, setPatientRut] = useState("");

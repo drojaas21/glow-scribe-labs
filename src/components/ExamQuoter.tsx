@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
   Brain, ScanLine, Waves, Bone, HeartPulse, Droplets, Activity,
   Search, X, FileDown, Stethoscope, Plus, Minus, Trash2, ShoppingCart,
@@ -30,10 +30,15 @@ export type CartItem = {
   qty: number;
 };
 
-export function ExamQuoter() {
+export function ExamQuoter({
+  cart,
+  setCart,
+}: {
+  cart: CartItem[];
+  setCart: Dispatch<SetStateAction<CartItem[]>>;
+}) {
   const [activeCat, setActiveCat] = useState<ExamCategory | null>(null);
   const [query, setQuery] = useState("");
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [convenio, setConvenio] = useState<Convenio>("particular");
   const [prevision, setPrevision] = useState<"particular" | "fa" | "fbcd">("particular");
   const [patientName, setPatientName] = useState("");
