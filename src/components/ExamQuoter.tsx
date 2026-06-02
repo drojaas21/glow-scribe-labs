@@ -1,7 +1,7 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
   Brain, ScanLine, Waves, Bone, HeartPulse, Droplets, Activity,
-  Search, X, FileDown, Stethoscope, Plus, Minus, Trash2, ShoppingCart,
+  Search, X, Stethoscope, Plus, Minus, Trash2, ShoppingCart,
   AlertTriangle, Info,
   type LucideIcon,
 } from "lucide-react";
@@ -10,7 +10,6 @@ import {
   convenioMeta, type Exam, type ExamCategory, type Convenio,
 } from "@/data/catalog";
 import { formatCLP, normalize } from "@/lib/format";
-import { generateExamPDF } from "@/lib/pdf";
 import { needsCreatinineAlert, needsRMSafetyAlert } from "@/data/imagingPrep";
 import { Landmark, Building2, ShieldCheck, Users } from "lucide-react";
 
@@ -33,17 +32,18 @@ export type CartItem = {
 export function ExamQuoter({
   cart,
   setCart,
+  prevision,
+  convenio,
+  setConvenio,
 }: {
   cart: CartItem[];
   setCart: Dispatch<SetStateAction<CartItem[]>>;
+  prevision: "particular" | "fa" | "fbcd";
+  convenio: Convenio;
+  setConvenio: Dispatch<SetStateAction<Convenio>>;
 }) {
   const [activeCat, setActiveCat] = useState<ExamCategory | null>(null);
   const [query, setQuery] = useState("");
-  const [convenio, setConvenio] = useState<Convenio>("particular");
-  const [prevision, setPrevision] = useState<"particular" | "fa" | "fbcd">("particular");
-  const [patientName, setPatientName] = useState("");
-  const [patientRut, setPatientRut] = useState("");
-  const [observations, setObservations] = useState("");
   const [creatinineAlertDismissed, setCreatinineAlertDismissed] = useState(false);
   const [rmAlertDismissed, setRmAlertDismissed] = useState(false);
 
@@ -109,14 +109,6 @@ export function ExamQuoter({
   const hasContrastExam = cart.some((item) => needsCreatinineAlert(item.category));
   const hasRMExam = cart.some((item) => needsRMSafetyAlert(item.category));
 
-  const handlePDF = () => {
-    if (cart.length === 0) return;
-    const pdfItems = cart.map((item) => {
-      const { base, pct, discountAmt, discountedUnit, lineTotal } = calcItem(item);
-      return { exam: item.exam, category: item.category, qty: item.qty, baseUnit: base, discountPct: pct, discountAmt, discountedUnit, lineTotal };
-    });
-    generateExamPDF({ items: pdfItems, convenio, prevision: previsionLabel, grandTotal, patientName, patientRut, observations: observations.trim() });
-  };
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
@@ -223,63 +215,34 @@ export function ExamQuoter({
 
       {/* RIGHT: convenio + cart + PDF */}
       <div className="min-w-0 space-y-5">
-        {/* Convenio + Previsión */}
+        {/* Convenio */}
         <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
-          <SectionTitle>Convenio y previsión</SectionTitle>
-          <div className="mb-4">
-            <span className="mb-1.5 block text-xs font-semibold text-foreground">Convenio comercial</span>
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-              {(Object.keys(convenioMeta) as Convenio[]).map((c) => {
-                const Icon = convenioIcons[c];
-                const isSel = convenio === c;
-                const anyPct = cart.length > 0
-                  ? (discountMatrix[cart[0].category]?.[c] ?? 0)
-                  : 0;
-                return (
-                  <button
-                    key={c}
-                    onClick={() => setConvenio(c)}
-                    className={`relative flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-all ${
-                      isSel ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-border bg-background hover:border-primary/40"
-                    }`}
-                  >
-                    {c !== "particular" && (
-                      <span className={`absolute right-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${anyPct > 0 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-muted text-muted-foreground"}`}>
-                        {anyPct > 0 ? `-${anyPct}%` : "0%"}
-                      </span>
-                    )}
-                    <Icon className={`h-5 w-5 ${isSel ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className="text-[10px] font-semibold leading-tight text-foreground">{convenioMeta[c]}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <span className="mb-1.5 block text-xs font-semibold text-foreground">Previsión del paciente</span>
-            <div className="grid grid-cols-3 gap-2">
-              {([
-                { key: "particular", label: "Particular" },
-                { key: "fa", label: "FONASA A" },
-                { key: "fbcd", label: "FONASA B/C/D" },
-              ] as const).map((p) => {
-                const isSel = prevision === p.key;
-                return (
-                  <button
-                    key={p.key}
-                    onClick={() => setPrevision(p.key)}
-                    className={`rounded-xl border px-2 py-2.5 text-center text-[11px] font-semibold transition-all ${
-                      isSel
-                        ? "border-transparent bg-gradient-brand text-primary-foreground shadow-[var(--shadow-lift)]"
-                        : "border-border bg-background text-foreground hover:border-primary/40"
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                );
-              })}
-            </div>
+          <SectionTitle>Convenio comercial</SectionTitle>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            {(Object.keys(convenioMeta) as Convenio[]).map((c) => {
+              const Icon = convenioIcons[c];
+              const isSel = convenio === c;
+              const anyPct = cart.length > 0
+                ? (discountMatrix[cart[0].category]?.[c] ?? 0)
+                : 0;
+              return (
+                <button
+                  key={c}
+                  onClick={() => setConvenio(c)}
+                  className={`relative flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-all ${
+                    isSel ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-border bg-background hover:border-primary/40"
+                  }`}
+                >
+                  {c !== "particular" && (
+                    <span className={`absolute right-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${anyPct > 0 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-muted text-muted-foreground"}`}>
+                      {anyPct > 0 ? `-${anyPct}%` : "0%"}
+                    </span>
+                  )}
+                  <Icon className={`h-5 w-5 ${isSel ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="text-[10px] font-semibold leading-tight text-foreground">{convenioMeta[c]}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -422,33 +385,6 @@ export function ExamQuoter({
           )}
         </div>
 
-        {/* Patient + observations + PDF */}
-        <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
-          <SectionTitle>Datos del paciente</SectionTitle>
-          <div className="grid grid-cols-2 gap-3">
-            <input value={patientName} onChange={(e) => setPatientName(e.target.value)} placeholder="Nombre del paciente"
-              className="rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30" />
-            <input value={patientRut} onChange={(e) => setPatientRut(e.target.value)} placeholder="RUT"
-              className="rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30" />
-          </div>
-
-          <span className="mb-1 mt-3 block text-xs font-semibold text-foreground">Observación (opcional)</span>
-          <textarea
-            value={observations}
-            onChange={(e) => setObservations(e.target.value)}
-            rows={3}
-            placeholder="Escribe aquí cualquier observación para incluir en la cotización…"
-            className="w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
-          />
-
-          <button
-            onClick={handlePDF}
-            disabled={cart.length === 0}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <FileDown className="h-4 w-4" /> Generar cotización PDF
-          </button>
-        </div>
       </div>
     </div>
   );

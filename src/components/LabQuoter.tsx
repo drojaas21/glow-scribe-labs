@@ -1,13 +1,12 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
-  Search, X, Plus, Trash2, FileDown, FlaskConical, Check,
+  Search, X, Plus, Trash2, FlaskConical, Check,
   Layers, AlertCircle, ChevronDown,
 } from "lucide-react";
 import { labDatabase, type LabExam } from "@/data/catalog";
 import { labProfiles, type LabProfile } from "@/data/profiles";
 import { soloParticularCodes } from "@/data/soloParticular";
 import { formatCLP, normalize } from "@/lib/format";
-import { generateLabPDF } from "@/lib/pdf";
 
 /** Codes explicitly blocked from sale (exams not done internally). */
 const blockedCodes = new Set(["0301095", "0306118", "0306123"]);
@@ -32,15 +31,13 @@ const previsionOptions: { key: Prevision; label: string }[] = [
 export function LabQuoter({
   cart,
   setCart,
+  prevision,
 }: {
   cart: LabExam[];
   setCart: Dispatch<SetStateAction<LabExam[]>>;
+  prevision: "particular" | "fa" | "fbcd";
 }) {
   const [query, setQuery] = useState("");
-  const [prevision, setPrevision] = useState<Prevision>("particular");
-  const [patientName, setPatientName] = useState("");
-  const [patientRut, setPatientRut] = useState("");
-  const [observations, setObservations] = useState("");
   const [profilesOpen, setProfilesOpen] = useState(false);
 
   const { mainResults, soloResults } = useMemo(() => {
@@ -177,28 +174,6 @@ export function LabQuoter({
       {/* ── RIGHT column ── */}
       <div className="min-w-0 space-y-5">
 
-        {/* ── Previsión ── */}
-        <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">Previsión del paciente</h3>
-          <div className="grid grid-cols-3 gap-2">
-            {previsionOptions.map((p) => {
-              const isSel = prevision === p.key;
-              return (
-                <button
-                  key={p.key}
-                  onClick={() => setPrevision(p.key)}
-                  className={`rounded-xl border px-2 py-2.5 text-center text-[11px] font-semibold transition-all ${
-                    isSel
-                      ? "border-transparent bg-gradient-brand text-primary-foreground shadow-[var(--shadow-lift)]"
-                      : "border-border bg-background text-foreground hover:border-primary/40"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
 
         {/* ── Cart ── */}
         <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
@@ -288,41 +263,6 @@ export function LabQuoter({
           </div>
         </div>
 
-        {/* ── Patient + Observations + PDF ── */}
-        <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">Datos del paciente</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              value={patientName}
-              onChange={(e) => setPatientName(e.target.value)}
-              placeholder="Nombre del paciente"
-              className="rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
-            />
-            <input
-              value={patientRut}
-              onChange={(e) => setPatientRut(e.target.value)}
-              placeholder="RUT"
-              className="rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
-            />
-          </div>
-
-          <span className="mb-1 mt-3 block text-xs font-semibold text-foreground">Observación (opcional)</span>
-          <textarea
-            value={observations}
-            onChange={(e) => setObservations(e.target.value)}
-            rows={3}
-            placeholder="Escribe aquí cualquier observación para incluir en la cotización…"
-            className="w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
-          />
-
-          <button
-            onClick={() => cart.length && generateLabPDF({ items: cart, prevision: previsionLabel, selectedTotal, patientName, patientRut, observations: observations.trim() })}
-            disabled={cart.length === 0}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <FileDown className="h-4 w-4" /> Generar cotización PDF
-          </button>
-        </div>
       </div>
     </div>
   );

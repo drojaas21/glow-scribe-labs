@@ -372,3 +372,162 @@ export function generateLabPDF(args: {
   footer(doc);
   doc.save("Cotizacion_Laboratorio.pdf");
 }
+
+// ── Cotización Integral (Imagenología + Laboratorio) ─────────────────────────
+
+export function generateCombinedPDF(args: {
+  imagingItems: ExamCartPDFItem[];
+  labItems: LabExam[];
+  patientName: string;
+  patientRut: string;
+  previsionLabel: string;
+  previsionKey: "particular" | "fa" | "fbcd";
+  convenioLabel: string;
+  imagingTotal: number;
+  imagingDiscount: number;
+  labTotal: number;
+  grandTotal: number;
+  observations: string;
+}) {
+  const doc = new jsPDF();
+  header(doc, "Cotización Integral de Exámenes");
+  let y = patientBox(doc, 38, args.patientName, args.patientRut);
+
+  doc.setFillColor(241, 247, 252);
+  doc.setDrawColor(...BRAND);
+  doc.roundedRect(15, y, 180, 12, 2, 2, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...BRAND_DARK);
+  doc.text("Convenio:", 20, y + 8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(40, 40, 40);
+  doc.text(args.convenioLabel, 50, y + 8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...BRAND_DARK);
+  doc.text("Previsión:", 115, y + 8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(40, 40, 40);
+  doc.text(args.previsionLabel, 145, y + 8);
+  y += 18;
+
+  // ── Imagenología ──────────────────────────────────────────────────────────
+  if (args.imagingItems.length > 0) {
+    doc.setFillColor(...BRAND_DARK);
+    doc.rect(15, y, 180, 8, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text("EXÁMENES DE IMAGENOLOGÍA", 105, y + 5.5, { align: "center" });
+    y += 10;
+
+    autoTable(doc, {
+      startY: y,
+      head: [["Examen", "Cant.", "P. Base", "Dcto.", "Total"]],
+      body: args.imagingItems.map((item) => [
+        item.exam.name,
+        String(item.qty),
+        formatCLP(item.baseUnit),
+        item.discountPct > 0 ? `-${item.discountPct}%` : "—",
+        formatCLP(item.lineTotal),
+      ]),
+      theme: "striped",
+      headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold" },
+      columnStyles: {
+        1: { halign: "center", cellWidth: 16 },
+        2: { halign: "right", cellWidth: 30 },
+        3: { halign: "center", cellWidth: 20 },
+        4: { halign: "right", cellWidth: 30 },
+      },
+      styles: { fontSize: 8, cellPadding: 2.5 },
+    });
+
+    // @ts-expect-error lastAutoTable injected by plugin
+    y = doc.lastAutoTable.finalY + 4;
+
+    if (args.imagingDiscount > 0) {
+      doc.setFillColor(240, 253, 244);
+      doc.setDrawColor(34, 197, 94);
+      doc.roundedRect(15, y, 180, 8, 1, 1, "FD");
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8);
+      doc.setTextColor(21, 128, 61);
+      doc.text(`Descuento ${args.convenioLabel}: −${formatCLP(args.imagingDiscount)}`, 18, y + 5.5);
+      y += 10;
+    }
+
+    doc.setFillColor(220, 235, 250);
+    doc.roundedRect(15, y, 180, 9, 1, 1, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...BRAND_DARK);
+    doc.text("Subtotal Imagenología", 18, y + 6.5);
+    doc.text(formatCLP(args.imagingTotal), 192, y + 6.5, { align: "right" });
+    y += 14;
+  }
+
+  // ── Laboratorio ───────────────────────────────────────────────────────────
+  if (args.labItems.length > 0) {
+    y = checkPage(doc, y, 22, "Laboratorio");
+    doc.setFillColor(...BRAND_DARK);
+    doc.rect(15, y, 180, 8, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text("EXÁMENES DE LABORATORIO", 105, y + 5.5, { align: "center" });
+    y += 10;
+
+    autoTable(doc, {
+      startY: y,
+      head: [["Código", "Examen", "FONASA A", "FONASA B/C/D", "Particular"]],
+      body: args.labItems.map((e) => [
+        e.code,
+        e.name,
+        e.fonasa_a != null ? formatCLP(e.fonasa_a) : "—",
+        e.fonasa_bcd != null ? formatCLP(e.fonasa_bcd) : "—",
+        e.particular > 0 ? formatCLP(e.particular) : "Consultar",
+      ]),
+      theme: "striped",
+      headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold" },
+      columnStyles: {
+        0: { cellWidth: 24, fontStyle: "bold", textColor: BRAND_DARK },
+        2: { halign: "right", cellWidth: 28 },
+        3: { halign: "right", cellWidth: 28 },
+        4: { halign: "right", cellWidth: 28 },
+      },
+      styles: { fontSize: 8, cellPadding: 2.5 },
+    });
+
+    // @ts-expect-error lastAutoTable injected by plugin
+    y = doc.lastAutoTable.finalY + 4;
+
+    doc.setFillColor(220, 235, 250);
+    doc.roundedRect(15, y, 180, 9, 1, 1, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...BRAND_DARK);
+    doc.text(`Subtotal Laboratorio (${args.previsionLabel})`, 18, y + 6.5);
+    doc.text(formatCLP(args.labTotal), 192, y + 6.5, { align: "right" });
+    y += 14;
+  }
+
+  // ── Total general ─────────────────────────────────────────────────────────
+  y = checkPage(doc, y, 32, "Total General");
+  doc.setFillColor(...BRAND_DARK);
+  doc.roundedRect(15, y, 180, 22, 2, 2, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text(`TOTAL GENERAL (${args.previsionLabel.toUpperCase()})`, 22, y + 8);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.text(formatCLP(args.grandTotal), 188, y + 16, { align: "right" });
+  y += 32;
+
+  y = observationsBox(doc, y, args.observations);
+  if (args.imagingItems.length > 0) y = prepSectionImaging(doc, y, args.imagingItems);
+  if (args.labItems.length > 0) labPrepSection(doc, y);
+
+  footer(doc);
+  doc.save("Cotizacion_Integral.pdf");
+}
