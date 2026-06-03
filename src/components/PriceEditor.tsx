@@ -5,7 +5,7 @@ import { labDatabase } from "@/data/catalog";
 import { formatCLP, normalize } from "@/lib/format";
 import { imagingOverrideKey, type AllOverrides, type ImagingOverride, type LabOverride } from "@/hooks/usePriceOverrides";
 
-const PASS = "diagno2025";
+const PASS = "123456";
 
 function NumInput({
   label,
