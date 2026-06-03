@@ -458,6 +458,15 @@ function Index() {
                   <FileDown className="h-4 w-4" />
                   {hasAnything ? "Generar cotización PDF" : "Agrega exámenes para cotizar"}
                 </button>
+
+                <a
+                  href="/Encuesta_Consentimiento_RM.pdf"
+                  download="Encuesta_Consentimiento_RM.pdf"
+                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-secondary/50 px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-secondary"
+                >
+                  <FileDown className="h-4 w-4 text-muted-foreground" />
+                  Encuesta y Consentimiento RM
+                </a>
               </div>
 
             </div>

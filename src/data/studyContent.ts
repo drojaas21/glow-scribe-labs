@@ -1103,6 +1103,186 @@ export const studyCards: StudyCard[] = [
     ],
   },
 
+  // ── PROTOCOLOS DE CONTRASTE ────────────────────────────────────────────────
+
+  {
+    id: "cont-creatinemia-tfge",
+    name: "Solicitud de Creatinemia y Evaluación de TFGe",
+    type: "imaging",
+    category: "CONT",
+    tags: ["Creatinemia", "TFGe", "CKD-EPI", "Gadolinio", "Contraste iodado", "Metformina"],
+    keywords: ["creatinemia", "tfge", "filtración glomerular", "ckd-epi", "contraste", "gadolinio", "metformina", "renal", "tc", "rm"],
+    sections: [
+      {
+        title: "¿Para qué sirve?",
+        items: [
+          "Establece cuándo solicitar **creatinemia sérica** antes de administrar contraste endovenoso (TC iodado o RM con gadolinio). El resultado tiene vigencia de **30 días**; si está vencido, el examen debe reprogramarse.",
+          "Aplica cuando el paciente cumple alguno de estos criterios: edad ≥60 años, diabetes con tratamiento farmacológico, HTA con IECA/ARA-II/diuréticos, ERC o monorreno, trasplante renal, insuficiencia cardíaca, uso de **metformina** (siempre, sin excepción), AINES crónicos o nefrotóxicos, mieloma múltiple o quimioterapia activa.",
+          "Si ningún criterio está presente, **no se requiere creatinemia**.",
+        ],
+      },
+      {
+        title: "Decisión según TFGe (CKD-EPI)",
+        items: [
+          "**TFGe ≥ 30 mL/min/1,73 m²**: proceder con el examen. Si usa metformina + TC con yodo: administrar contraste y suspender metformina por **48 h post examen**.",
+          "**TFGe < 30 mL/min/1,73 m²**: NO administrar contraste. Derivar al médico solicitante con constancia escrita.",
+          "**Diálisis crónica + TC iodado**: puede realizarse con precaución; coordinar el examen antes de la sesión de diálisis.",
+          "**Diálisis crónica + gadolinio**: NO administrar. Solo con autorización expresa del médico tratante.",
+          "DiagnoPRO utiliza **Dotarem® (gadoterate meglumine)**, agente macrocíclico Grupo II (ACR), de muy bajo riesgo de FSN.",
+        ],
+      },
+      {
+        title: "Preparación y Seguridad del Paciente",
+        items: [
+          "Verificar si el paciente cumple alguno de los criterios clínicos **antes** del examen.",
+          "Solicitar o revisar creatinemia vigente (≤30 días). Calcular TFGe con fórmula **CKD-EPI**.",
+          "Caso metformina: informar al paciente que debe **suspender la metformina y sus derivados** (Glafornil®, Dimefor®) y no reanudarla hasta 48 h después del examen.",
+        ],
+      },
+    ],
+  },
+
+  {
+    id: "cont-extravasacion",
+    name: "Manejo de Extravasación de Medio de Contraste",
+    type: "imaging",
+    category: "CONT",
+    tags: ["Extravasación", "Contraste iodado", "Gadolinio", "TC", "RM", "Urgencia"],
+    keywords: ["extravasacion", "contraste", "infiltracion", "vena", "tejido blando", "tc", "rm", "gadolinio", "yodo"],
+    sections: [
+      {
+        title: "¿Para qué sirve?",
+        items: [
+          "La **extravasación** es la infiltración accidental del contraste fuera de la vena hacia tejidos blandos. Puede ocurrir con inyección manual o automática y requiere **manejo inmediato**.",
+          "Signos de alerta: **dolor o ardor** en el sitio de punción, **inflamación o aumento de volumen** local, enrojecimiento o cambio de coloración de la piel, sensación de calor localizado, aumento de presión en el inyector automático (TC).",
+          "Ante el primer signo: **DETENER la inyección de inmediato**, sin esperar confirmación.",
+        ],
+      },
+      {
+        title: "Protocolo de Manejo Inmediato",
+        items: [
+          "**Paso 1**: Suspender la inyección al primer signo de alerta.",
+          "**Paso 2**: Retirar el acceso venoso. En RM: no intentar aspirar el contraste extravasado.",
+          "**Paso 3**: Aplicar compresas frías sobre la zona afectada durante 15–20 minutos.",
+          "**Paso 4 TC**: Elevar la extremidad por sobre el nivel del corazón + tomar **RX local** para evaluar extensión y descartar compromiso profundo.",
+          "**Paso 4 RM**: Elevar la extremidad. **No se requiere RX**; evaluación es exclusivamente clínica.",
+          "**Paso 5**: Monitorear al paciente hasta resolución completa. Sin mejoría → derivar a servicio médico.",
+          "**Paso 6**: Registrar el evento en el sistema: volumen extravasado estimado, síntomas, medidas aplicadas y evolución.",
+        ],
+      },
+      {
+        title: "Criterios de Derivación a Urgencias",
+        items: [
+          "Extravasación de volumen significativo.",
+          "Dolor intenso persistente o que aumenta progresivamente tras las medidas iniciales.",
+          "Aparición de ampollas, necrosis cutánea o cambio de coloración severo (piel pálida o cianótica).",
+          "Compromiso neurovascular: hormigueo, pérdida de sensibilidad o limitación del movimiento.",
+          "Paciente anticoagulado o con alteraciones de coagulación conocidas.",
+          "Ausencia de mejoría clínica tras **30 minutos** de manejo local. Activar protocolo AOC2.1-1.",
+        ],
+      },
+      {
+        title: "Medidas Preventivas",
+        items: [
+          "Verificar permeabilidad de la vía venosa con **lavado de suero fisiológico** antes de conectar el inyector.",
+          "Calibre adecuado: **20G** TC general, **18G** angiografía, **22–24G** RM.",
+          "Asegurarse de que la vía esté correctamente fijada y sin signos de infiltración previa.",
+          "Monitorear visualmente la zona de punción **durante toda la inyección**.",
+          "Preferir venas de buen calibre en fosa antecubital; evitar venas frágiles o de difícil acceso.",
+        ],
+      },
+    ],
+  },
+
+  {
+    id: "cont-reacciones-adversas",
+    name: "Clasificación y Manejo de Reacciones Adversas a Contraste",
+    type: "imaging",
+    category: "CONT",
+    tags: ["Reacción adversa", "Anafilaxia", "Contraste", "Emergencia", "Hidrocortisona", "Clorfenamina"],
+    keywords: ["reaccion adversa", "anafilaxia", "contraste", "alergica", "shock", "broncoespasmo", "urticaria", "hipotension", "emergencia"],
+    sections: [
+      {
+        title: "Clasificación de Reacciones Adversas",
+        items: [
+          "🟡 **LEVE**: náuseas/vómitos leves, prurito localizado, urticaria leve, rubor. Autolimitadas, generalmente sin tratamiento farmacológico.",
+          "🟠 **MODERADA**: broncoespasmo leve, hipotensión moderada (PA 80–90 mmHg), edema facial sin compromiso de vía aérea, urticaria generalizada, taquicardia/bradicardia sin compromiso hemodinámico.",
+          "🔴 **GRAVE**: laringoespasmo, edema de glotis, shock anafiláctico, arritmias graves, pérdida de conciencia, paro cardiorrespiratorio. Comprometen la vida.",
+          "⚫ **FATAL**: paro cardiorrespiratorio refractario. Activación inmediata de protocolo de emergencias y soporte vital obligatorio.",
+          "Las reacciones pueden presentarse **durante la inyección o en el período de observación posterior**.",
+        ],
+      },
+      {
+        title: "Manejo Clínico por Nivel",
+        items: [
+          "🟡 **Leve**: Detener inyección si aún activa → tranquilizar al paciente → sala de recuperación → monitorizar signos vitales → observar **30 min** → alta si síntomas ceden.",
+          "🟠 **Moderada**: Detener inyección → llamar al radiólogo/director técnico → acceso venoso permeable → administrar **Hidrocortisona 200 mg EV** + **Clorfenamina 10 mg EV** → observar **60 min** → si no mejora en 15–20 min, escalar a manejo grave.",
+          "🔴 **Grave**: Detener inyección → **ACTIVAR protocolo AOC2.1-1** → no dejar solo al paciente → posición decúbito supino con piernas elevadas (shock) o semisentado (disnea) → oxígeno 6–10 L/min → mantener vía venosa → RCP avanzado si paro cardiorrespiratorio.",
+          "Siempre registrar el evento, incluso si es leve y se resuelve sin intervención farmacológica.",
+        ],
+      },
+      {
+        title: "Medicamentos de Emergencia Autorizados",
+        items: [
+          "**Hidrocortisona 200 mg EV**: indicada en reacción moderada. Corticoide para reducir respuesta inflamatoria.",
+          "**Clorfenamina 10 mg EV**: indicada en reacción moderada. Antihistamínico H1 para síntomas alérgicos.",
+          "Ante reacción **grave**: la conducta es derivación inmediata a urgencias + RCP avanzado si corresponde. Los medicamentos autorizados por DiagnoPRO son solo para reacciones moderadas.",
+        ],
+      },
+      {
+        title: "Criterios de Alta",
+        items: [
+          "🟡 **Leve**: observación mínima 30 min desde resolución; signos vitales estables.",
+          "🟠 **Moderada**: observación mínima 60 min desde tratamiento; evaluación médica favorable.",
+          "🔴 **Grave**: alta exclusiva del equipo de urgencias que recibe al paciente. No puede retirarse sin evaluación médica externa.",
+        ],
+      },
+    ],
+  },
+
+  {
+    id: "cont-indicaciones-post-examen",
+    name: "Indicaciones Post Examen con Contraste",
+    type: "imaging",
+    category: "CONT",
+    tags: ["Post examen", "Contraste", "Alta", "Metformina", "Síntomas de alarma"],
+    keywords: ["post examen", "contraste", "alta", "metformina", "hidratacion", "sintomas alarma", "indicaciones", "tc", "rm"],
+    sections: [
+      {
+        title: "¿Para qué sirve?",
+        items: [
+          "Establece las instrucciones que deben entregarse al paciente al finalizar un examen con contraste endovenoso (TC iodado o RM con gadolinio) para favorecer la **eliminación del contraste**, prevenir complicaciones tardías y orientar ante síntomas posteriores.",
+        ],
+      },
+      {
+        title: "Indicaciones Generales (TC y RM)",
+        items: [
+          "Puede retomar sus **actividades habituales de forma inmediata** después del procedimiento.",
+          "Beber aproximadamente **2 litros de agua al día** durante los próximos 2 a 3 días para favorecer la eliminación del contraste por la orina.",
+        ],
+      },
+      {
+        title: "Indicación Especial: Metformina",
+        items: [
+          "Aplica **únicamente a TC con contraste iodado**. NO aplica a RM con gadolinio.",
+          "Si el paciente usa Metformina (Glafornil®, Dimefor® u otros derivados): mantener la **suspensión del medicamento durante 48 horas** posteriores al examen.",
+          "Fundamento: la metformina puede acumularse en presencia de deterioro renal transitorio post contraste iodado, aumentando el riesgo de **acidosis láctica**.",
+        ],
+      },
+      {
+        title: "Síntomas de Alarma — Consultar Urgencias",
+        items: [
+          "**Dificultad para respirar** o sensación de ahogo → reacción anafiláctica tardía.",
+          "**Hinchazón de rostro, labios o lengua** → angioedema / reacción alérgica tardía.",
+          "**Urticaria, picazón intensa o sarpullido** generalizado → reacción cutánea tardía.",
+          "**Náuseas o vómitos persistentes** → reacción sistémica tardía.",
+          "**Dolor, enrojecimiento, hinchazón o calor en el brazo** donde se aplicó el contraste → extravasación tardía/flebitis.",
+          "Ante cualquiera de estos síntomas: acudir directamente al **servicio de urgencias más cercano**. No esperar a que empeoren.",
+        ],
+      },
+    ],
+  },
+
   {
     id: "lab-vitamina-b12",
     name: "Vitamina B12 (Cobalamina)",
