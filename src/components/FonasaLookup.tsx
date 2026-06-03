@@ -219,7 +219,7 @@ export function FonasaLookup({
             const hasQuery = query.trim().length > 0;
             const show = hasQuery || isExpanded;
             const availableInSub = items.filter((i) => i.available).length;
-            const isLabSub = SUBSECTIONS_LAB.includes(sub);
+            const isLabSub = items[0]?.section === "lab";
             const sectionIcon = !isLabSub
               ? <Scan className="h-3.5 w-3.5 text-primary" />
               : <FlaskConical className="h-3.5 w-3.5 text-violet-500" />;
@@ -262,8 +262,9 @@ export function FonasaLookup({
                       </thead>
                       <tbody className="divide-y divide-border">
                         {items.map((entry) => {
-                          const inCart = hasQuoter && labCart?.some((c) => c.code === entry.code);
-                          const dbEntry = isLabSub ? labDatabase.find((e) => e.code === entry.code) : undefined;
+                          const isLabEntry = entry.section === "lab";
+                          const inCart = hasQuoter && isLabEntry && labCart?.some((c) => c.code === entry.code);
+                          const dbEntry = isLabEntry ? labDatabase.find((e) => e.code === entry.code) : undefined;
                           return (
                             <tr
                               key={entry.code}
@@ -284,7 +285,7 @@ export function FonasaLookup({
                               )}
                               <td className="px-4 py-2.5 text-center">
                                 {entry.available ? (
-                                  hasQuoter && isLabSub ? (
+                                  hasQuoter && isLabEntry ? (
                                     <button
                                       onClick={() => handleAdd(entry)}
                                       disabled={!!inCart}
