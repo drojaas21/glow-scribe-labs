@@ -1,7 +1,7 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
   Search, X, Plus, FlaskConical, Check,
-  Layers, AlertCircle, ChevronDown,
+  Layers, AlertCircle, ChevronDown, Hash,
 } from "lucide-react";
 import { labDatabase, type LabExam } from "@/data/catalog";
 import { labProfiles, type LabProfile } from "@/data/profiles";
@@ -27,21 +27,27 @@ export function LabQuoter({
   setCart: Dispatch<SetStateAction<LabExam[]>>;
   prevision: "particular" | "fa" | "fbcd";
 }) {
-  const [query, setQuery] = useState("");
+  const [nameQuery, setNameQuery] = useState("");
+  const [codeQuery, setCodeQuery] = useState("");
   const [profilesOpen, setProfilesOpen] = useState(false);
 
+  const isSearching = nameQuery.trim().length >= 2 || codeQuery.trim().length >= 1;
+
   const { mainResults, soloResults } = useMemo(() => {
-    const all =
-      query.trim().length < 2
-        ? labDatabase
-        : (() => {
-            const q = normalize(query);
-            return labDatabase.filter(
-              (e) =>
-                normalize(cleanName(e.name)).includes(q) ||
-                e.code.includes(query.trim()),
-            );
-          })();
+    const all = (() => {
+      if (!isSearching) return labDatabase;
+      const nq = normalize(nameQuery);
+      const cq = codeQuery.trim().toLowerCase();
+      return labDatabase.filter((e) => {
+        const nameMatch = nq.length >= 2
+          ? normalize(cleanName(e.name)).includes(nq)
+          : true;
+        const codeMatch = cq.length >= 1
+          ? e.code.toLowerCase().includes(cq)
+          : true;
+        return nameMatch && codeMatch;
+      });
+    })();
 
     const main: LabExam[] = [];
     const solo: LabExam[] = [];
@@ -49,8 +55,8 @@ export function LabQuoter({
       if (soloParticularCodes.has(e.code)) solo.push(e);
       else main.push(e);
     }
-    return { mainResults: main.slice(0, 80), soloResults: solo };
-  }, [query]);
+    return { mainResults: main.slice(0, 100), soloResults: solo.slice(0, 30) };
+  }, [nameQuery, codeQuery, isSearching]);
 
   const add = (e: LabExam) => {
     if (cart.some((c) => c.code === e.code)) return;
@@ -70,7 +76,11 @@ export function LabQuoter({
     add(item);
   };
 
+  const clearSearch = () => { setNameQuery(""); setCodeQuery(""); };
+
   void prevision;
+
+  const totalResults = mainResults.length + soloResults.length;
 
   return (
     <div className="min-w-0 space-y-5">
@@ -109,27 +119,46 @@ export function LabQuoter({
       {/* Catalog */}
       <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
         <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">Catálogo de laboratorio</h3>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar por código FONASA o nombre…"
-            className="w-full rounded-xl border border-input bg-background py-3 pl-10 pr-10 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
-          />
-          {query && (
-            <button
-              onClick={() => setQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
+
+        {/* Dual search */}
+        <div className="grid gap-2 sm:grid-cols-2">
+          {/* Name search */}
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={nameQuery}
+              onChange={(e) => setNameQuery(e.target.value)}
+              placeholder="Buscar por nombre del examen…"
+              className="w-full rounded-xl border border-input bg-background py-2.5 pl-10 pr-9 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
+            />
+            {nameQuery && (
+              <button onClick={() => setNameQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          {/* Code search */}
+          <div className="relative">
+            <Hash className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={codeQuery}
+              onChange={(e) => setCodeQuery(e.target.value)}
+              placeholder="Buscar por código FONASA: 0301026…"
+              className="w-full rounded-xl border border-input bg-background py-2.5 pl-10 pr-9 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
+            />
+            {codeQuery && (
+              <button onClick={() => setCodeQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
+
         <p className="mt-2 px-1 text-xs text-muted-foreground">
-          {query.trim().length < 2
-            ? `${labDatabase.length} exámenes en catálogo`
-            : `${mainResults.length + soloResults.length} resultado(s)`}
+          {isSearching
+            ? <>{totalResults} resultado(s) · <button onClick={clearSearch} className="font-medium text-primary hover:underline">Limpiar</button></>
+            : <>{labDatabase.length} exámenes en catálogo</>
+          }
         </p>
 
         <div className="mt-2 max-h-[520px] space-y-2 overflow-y-auto pr-1">
@@ -145,6 +174,13 @@ export function LabQuoter({
               </div>
               <ExamList items={soloResults} cart={cart} onAdd={add} isSolo />
             </>
+          )}
+
+          {totalResults === 0 && isSearching && (
+            <div className="flex flex-col items-center gap-2 py-12 text-center text-sm text-muted-foreground">
+              <FlaskConical className="h-8 w-8 opacity-30" />
+              Sin resultados. Intenta con otro nombre o código.
+            </div>
           )}
         </div>
       </div>
