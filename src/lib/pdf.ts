@@ -356,6 +356,203 @@ export function generateCombinedPDF(args: {
   doc.save("Cotizacion_DiagnoPRO.pdf");
 }
 
+// ── Indicaciones de Laboratorio PDF ──────────────────────────────────────────
+
+export function generateLabIndicacionesPDF() {
+  const doc = new jsPDF();
+
+  // Header
+  doc.setFillColor(...BRAND_DARK);
+  doc.rect(0, 0, 210, 40, "F");
+  doc.setFillColor(...BRAND);
+  doc.rect(0, 38, 210, 2, "F");
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.text("DiagnoPRO Temuco", 15, 17);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.text("Laboratorio Clínico · Indicaciones para Pacientes", 15, 28);
+
+  const now = new Date();
+  doc.setFontSize(9);
+  doc.text(now.toLocaleDateString("es-CL"), 195, 17, { align: "right" });
+  doc.text("Las Heras 453, esq. Av. Caupolican · Temuco", 195, 26, { align: "right" });
+  doc.text("(045) 2887405 · 2887400", 195, 33, { align: "right" });
+
+  let y = 54;
+
+  // Welcome
+  doc.setFillColor(241, 247, 252);
+  doc.setDrawColor(...BRAND);
+  doc.roundedRect(15, y, 180, 20, 3, 3, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(...BRAND_DARK);
+  doc.text("Estimado/a Paciente", 105, y + 8, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  doc.text("Los exámenes de sangre se toman por orden de llegada.", 105, y + 15, { align: "center" });
+  y += 28;
+
+  // Horario section
+  doc.setFillColor(...BRAND);
+  doc.roundedRect(15, y, 180, 10, 2, 2, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("HORARIO DE ATENCIÓN", 105, y + 7, { align: "center" });
+  y += 14;
+
+  doc.setFillColor(248, 250, 255);
+  doc.setDrawColor(200, 215, 240);
+  doc.roundedRect(15, y, 85, 24, 2, 2, "FD");
+  doc.roundedRect(110, y, 85, 24, 2, 2, "FD");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...BRAND_DARK);
+  doc.text("Lunes a Viernes", 57.5, y + 8, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.setTextColor(40, 40, 40);
+  doc.text("08:00 – 10:30 hrs", 57.5, y + 18, { align: "center" });
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...BRAND_DARK);
+  doc.text("Sábados", 152.5, y + 8, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.setTextColor(40, 40, 40);
+  doc.text("09:00 – 10:30 hrs", 152.5, y + 18, { align: "center" });
+  y += 32;
+
+  // Ayuno section
+  doc.setFillColor(...BRAND);
+  doc.roundedRect(15, y, 180, 10, 2, 2, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("AYUNO REQUERIDO", 105, y + 7, { align: "center" });
+  y += 14;
+
+  doc.setFillColor(241, 247, 252);
+  doc.setDrawColor(...BRAND);
+  doc.roundedRect(15, y, 180, 22, 2, 2, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...BRAND_DARK);
+  doc.text("Mínimo 8 horas · Máximo 12 horas", 105, y + 8, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(60, 60, 60);
+  const ayunoText = "El paciente debe venir con un mínimo de 08 horas de ayuno y máximo de 12 horas (no más de 12 horas para no alterar las muestras).";
+  const ayunoLines = doc.splitTextToSize(ayunoText, 170);
+  doc.text(ayunoLines, 105, y + 16, { align: "center" });
+  y += 30;
+
+  // Warning box
+  doc.setFillColor(255, 251, 235);
+  doc.setDrawColor(234, 179, 8);
+  doc.roundedRect(15, y, 180, 26, 2, 2, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(120, 80, 0);
+  doc.text("⚠  IMPORTANTE", 20, y + 8);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  const warnText = "Si se excede el tiempo de ayuno recomendado, los resultados podrían verse afectados, lo que puede llevar a diagnósticos incorrectos o a la necesidad de repetir la prueba.";
+  const warnLines = doc.splitTextToSize(warnText, 170);
+  doc.text(warnLines, 20, y + 15);
+  y += 32;
+
+  // Tip box
+  doc.setFillColor(240, 253, 244);
+  doc.setDrawColor(34, 197, 94);
+  doc.roundedRect(15, y, 180, 14, 2, 2, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(21, 128, 61);
+  doc.text("✓  Recomendación:", 20, y + 6);
+  doc.setFont("helvetica", "normal");
+  doc.text("Para no exceder el ayuno, realice su última colación a las 23:00 hrs del día anterior.", 20, y + 12);
+  y += 22;
+
+  // Indicaciones específicas
+  doc.setFillColor(...BRAND);
+  doc.roundedRect(15, y, 180, 10, 2, 2, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("INDICACIONES ESPECÍFICAS", 105, y + 7, { align: "center" });
+  y += 14;
+
+  const specifics = [
+    {
+      icon: "🧪",
+      title: "Examen de Orina",
+      body: "Recolectar la primera orina de la mañana (segundo chorro). Una vez recolectada la muestra, debe ser ingresada al laboratorio en un plazo máximo de 2 horas.",
+    },
+    {
+      icon: "🔬",
+      title: "Examen de Antígeno Prostático (PSA)",
+      body: "El paciente debe tener abstinencia sexual de 48 horas antes del examen.",
+    },
+  ];
+
+  for (const s of specifics) {
+    doc.setFillColor(248, 250, 255);
+    doc.setDrawColor(200, 215, 240);
+    const bodyLines = doc.splitTextToSize(s.body, 155);
+    const boxH = 14 + bodyLines.length * 5.5;
+    doc.roundedRect(15, y, 180, boxH, 2, 2, "FD");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...BRAND_DARK);
+    doc.text(`${s.icon}  ${s.title}`, 20, y + 8);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(60, 60, 60);
+    doc.text(bodyLines, 22, y + 14);
+    y += boxH + 5;
+  }
+
+  // Documentos requeridos
+  doc.setFillColor(...BRAND);
+  doc.roundedRect(15, y, 180, 10, 2, 2, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("DOCUMENTOS REQUERIDOS", 105, y + 7, { align: "center" });
+  y += 14;
+
+  doc.setFillColor(241, 247, 252);
+  doc.setDrawColor(...BRAND);
+  doc.roundedRect(15, y, 180, 18, 2, 2, "FD");
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(40, 40, 40);
+  doc.text("• Cédula de identidad vigente", 22, y + 7);
+  doc.text("• Orden médica del examen solicitado", 22, y + 14);
+  y += 26;
+
+  // Footer
+  doc.setFillColor(...BRAND_DARK);
+  doc.rect(0, 275, 210, 22, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("DiagnoPRO Temuco", 105, 283, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.text("www.diagnopro.cl  ·  Las Heras 453, esq. Av. Caupolican  ·  (045) 2887405 – 2887400  ·  contacto@diagnopro.cl", 105, 290, { align: "center" });
+
+  doc.save("Indicaciones_Laboratorio_DiagnoPRO.pdf");
+}
+
 // ── Keep legacy exports for backwards compatibility ──────────────────────────
 
 export function generateExamPDF(args: {

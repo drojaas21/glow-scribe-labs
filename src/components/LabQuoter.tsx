@@ -1,12 +1,13 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
   Search, X, Plus, FlaskConical, Check,
-  Layers, AlertCircle, ChevronDown, Hash,
+  Layers, AlertCircle, ChevronDown, Hash, FileText,
 } from "lucide-react";
 import { labDatabase, type LabExam } from "@/data/catalog";
 import { labProfiles, type LabProfile } from "@/data/profiles";
 import { soloParticularCodes } from "@/data/soloParticular";
 import { formatCLP, normalize } from "@/lib/format";
+import { generateLabIndicacionesPDF } from "@/lib/pdf";
 
 const blockedCodes = new Set(["0301095", "0306118", "0306123"]);
 
@@ -114,6 +115,28 @@ export function LabQuoter({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Indicaciones download */}
+      <div className="rounded-2xl border bg-card p-4 shadow-[var(--shadow-card)]">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <FileText className="h-4.5 w-4.5 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground">Indicaciones para el paciente</p>
+              <p className="text-xs text-muted-foreground">Ayuno, horarios, orina y documentos requeridos</p>
+            </div>
+          </div>
+          <button
+            onClick={() => generateLabIndicacionesPDF()}
+            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary transition hover:bg-primary/15 active:scale-95"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            Descargar PDF
+          </button>
+        </div>
       </div>
 
       {/* Catalog */}
