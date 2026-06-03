@@ -126,7 +126,7 @@ function Index() {
     });
   };
 
-  const showSidebar = tab !== "estudio" && tab !== "caja" && tab !== "fonasa";
+  const showSidebar = tab !== "estudio" && tab !== "caja";
 
   return (
     <div className="min-h-screen bg-gradient-soft">
@@ -202,6 +202,9 @@ function Index() {
               </div>
               <div className={tab === "laboratorio" ? "" : "hidden"}>
                 <LabQuoter cart={labCart} setCart={setLabCart} prevision={prevision} />
+              </div>
+              <div className={tab === "fonasa" ? "" : "hidden"}>
+                <FonasaLookup labCart={labCart} setLabCart={setLabCart} />
               </div>
             </div>
 
@@ -468,7 +471,6 @@ function Index() {
             <div className={tab === "estudio" ? "" : "hidden"}>
               <StudyMode />
             </div>
-            {tab === "fonasa" && <FonasaLookup />}
           </div>
         )}
       </main>

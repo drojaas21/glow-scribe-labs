@@ -461,7 +461,7 @@ export function generateLabIndicacionesPDF() {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(120, 80, 0);
-  doc.text("⚠  IMPORTANTE", 20, y + 8);
+  doc.text("IMPORTANTE:", 20, y + 8);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   const warnText = "Si se excede el tiempo de ayuno recomendado, los resultados podrían verse afectados, lo que puede llevar a diagnósticos incorrectos o a la necesidad de repetir la prueba.";
@@ -476,7 +476,7 @@ export function generateLabIndicacionesPDF() {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(21, 128, 61);
-  doc.text("✓  Recomendación:", 20, y + 6);
+  doc.text("Recomendacion:", 20, y + 6);
   doc.setFont("helvetica", "normal");
   doc.text("Para no exceder el ayuno, realice su última colación a las 23:00 hrs del día anterior.", 20, y + 12);
   y += 22;
@@ -492,13 +492,11 @@ export function generateLabIndicacionesPDF() {
 
   const specifics = [
     {
-      icon: "🧪",
       title: "Examen de Orina",
-      body: "Recolectar la primera orina de la mañana (segundo chorro). Una vez recolectada la muestra, debe ser ingresada al laboratorio en un plazo máximo de 2 horas.",
+      body: "Recolectar la primera orina de la manana (segundo chorro). Una vez recolectada la muestra, debe ser ingresada al laboratorio en un plazo maximo de 2 horas.",
     },
     {
-      icon: "🔬",
-      title: "Examen de Antígeno Prostático (PSA)",
+      title: "Examen de Antigeno Prostatico (PSA)",
       body: "El paciente debe tener abstinencia sexual de 48 horas antes del examen.",
     },
   ];
@@ -512,7 +510,7 @@ export function generateLabIndicacionesPDF() {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(...BRAND_DARK);
-    doc.text(`${s.icon}  ${s.title}`, 20, y + 8);
+    doc.text(s.title, 20, y + 8);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(60, 60, 60);

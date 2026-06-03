@@ -1,9 +1,9 @@
-import { useState, useMemo } from "react";
-import { Search, CheckCircle2, XCircle, FlaskConical, Scan, ChevronDown, ChevronUp } from "lucide-react";
-import { labDatabase } from "@/data/catalog";
+import { useState, useMemo, type Dispatch, type SetStateAction } from "react";
+import { Search, CheckCircle2, XCircle, FlaskConical, Scan, ChevronDown, ChevronUp, Plus, Check } from "lucide-react";
+import { labDatabase, type LabExam } from "@/data/catalog";
 import { imagingFonasaCodes, labNotAvailable, type FonasaEntry } from "@/data/fonasaCodes";
+import { formatCLP } from "@/lib/format";
 
-// Normalise a string for search: lowercase, no accents, no spaces
 function norm(s: string) {
   return s
     .toLowerCase()
@@ -13,14 +13,11 @@ function norm(s: string) {
     .trim();
 }
 
-// Format FONASA code for display: "0301026" → "03 01 026"
 function fmtCode(raw: string) {
   return raw.replace(/^(\d{2})(\d{2})(\d{3})$/, "$1 $2 $3");
 }
 
-// Build unified dataset once
 function buildDataset(): FonasaEntry[] {
-  // Lab entries from lab.json → available (deduplicate by code, first wins)
   const seenLabCodes = new Set<string>();
   const labAvail: FonasaEntry[] = [];
   for (const e of labDatabase) {
@@ -35,11 +32,8 @@ function buildDataset(): FonasaEntry[] {
       available: true,
     });
   }
-
-  // Deduplicate by code (lab.json wins)
   const labAvailCodes = seenLabCodes;
   const labExtra = labNotAvailable.filter((e) => !labAvailCodes.has(e.code));
-
   return [...imagingFonasaCodes, ...labAvail, ...labExtra].sort((a, b) =>
     a.code.localeCompare(b.code)
   );
@@ -73,12 +67,19 @@ const SUBSECTIONS_LAB = [
 
 type SectionFilter = "all" | "lab" | "imagenologia";
 
-export function FonasaLookup() {
+export function FonasaLookup({
+  labCart,
+  setLabCart,
+}: {
+  labCart?: LabExam[];
+  setLabCart?: Dispatch<SetStateAction<LabExam[]>>;
+}) {
   const [query, setQuery] = useState("");
   const [sectionFilter, setSectionFilter] = useState<SectionFilter>("all");
   const [availFilter, setAvailFilter] = useState<"all" | "yes" | "no">("all");
   const [expandedSubs, setExpandedSubs] = useState<Record<string, boolean>>({});
-  const [showAll, setShowAll] = useState(false);
+
+  const hasQuoter = !!labCart && !!setLabCart;
 
   const filtered = useMemo(() => {
     const q = norm(query);
@@ -87,14 +88,12 @@ export function FonasaLookup() {
       if (availFilter === "yes" && !e.available) return false;
       if (availFilter === "no" && e.available) return false;
       if (!q) return true;
-      // match by code (with or without spaces) or name
       const codeNorm = e.code.replace(/\s/g, "");
       const queryDigits = q.replace(/\s/g, "");
       return codeNorm.includes(queryDigits) || norm(e.name).includes(q);
     });
   }, [query, sectionFilter, availFilter]);
 
-  // Group by subsection
   const grouped = useMemo(() => {
     const map = new Map<string, FonasaEntry[]>();
     for (const entry of filtered) {
@@ -105,7 +104,6 @@ export function FonasaLookup() {
     return map;
   }, [filtered]);
 
-  // Subsection order
   const subsOrder = [...SUBSECTIONS_IMG, ...SUBSECTIONS_LAB];
   const orderedSubs = [...grouped.keys()].sort(
     (a, b) => subsOrder.indexOf(a) - subsOrder.indexOf(b)
@@ -113,6 +111,14 @@ export function FonasaLookup() {
 
   const toggleSub = (sub: string) =>
     setExpandedSubs((prev) => ({ ...prev, [sub]: !prev[sub] }));
+
+  const handleAdd = (entry: FonasaEntry) => {
+    if (!setLabCart) return;
+    const dbEntry = labDatabase.find((e) => e.code === entry.code);
+    if (!dbEntry) return;
+    if (labCart?.some((c) => c.code === entry.code)) return;
+    setLabCart((prev) => [...prev, dbEntry]);
+  };
 
   const availCount = ALL_DATASET.filter((e) => e.available).length;
   const totalCount = ALL_DATASET.length;
@@ -129,6 +135,7 @@ export function FonasaLookup() {
             <p className="mt-0.5 text-sm text-muted-foreground">
               Consulta si DiagnoPRO Temuco realiza un examen desde el Arancel MLE 2026
               (Grupos 03 Laboratorio · 04 Imagenología).
+              {hasQuoter && <span className="ml-1 font-semibold text-primary">Agrega exámenes de laboratorio directo al carrito.</span>}
             </p>
           </div>
           <div className="flex gap-3 text-center text-xs">
@@ -146,19 +153,17 @@ export function FonasaLookup() {
 
       {/* Search + filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        {/* Search input */}
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
             placeholder="Código (03 01 026) o nombre del examen…"
             value={query}
-            onChange={(e) => { setQuery(e.target.value); setShowAll(false); }}
+            onChange={(e) => setQuery(e.target.value)}
             className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-sm shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
         </div>
 
-        {/* Section filter */}
         <div className="flex rounded-xl border border-border bg-card p-0.5 text-xs font-semibold shadow-sm">
           {(["all", "imagenologia", "lab"] as SectionFilter[]).map((s) => (
             <button
@@ -177,7 +182,6 @@ export function FonasaLookup() {
           ))}
         </div>
 
-        {/* Availability filter */}
         <div className="flex rounded-xl border border-border bg-card p-0.5 text-xs font-semibold shadow-sm">
           {(["all", "yes", "no"] as const).map((v) => (
             <button
@@ -195,14 +199,12 @@ export function FonasaLookup() {
         </div>
       </div>
 
-      {/* Results count */}
       <p className="text-xs text-muted-foreground">
         {filtered.length === 0
           ? "Sin resultados para esa búsqueda."
           : `${filtered.length} código${filtered.length !== 1 ? "s" : ""} encontrado${filtered.length !== 1 ? "s" : ""}`}
       </p>
 
-      {/* Results grouped by subsection */}
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-16 text-center text-sm text-muted-foreground">
           <Search className="h-8 w-8 opacity-30" />
@@ -213,19 +215,19 @@ export function FonasaLookup() {
         <div className="space-y-3">
           {orderedSubs.map((sub) => {
             const items = grouped.get(sub)!;
-            const isExpanded = expandedSubs[sub] !== false; // default open
+            const isExpanded = expandedSubs[sub] !== false;
             const hasQuery = query.trim().length > 0;
             const show = hasQuery || isExpanded;
             const availableInSub = items.filter((i) => i.available).length;
-            const sectionIcon = SUBSECTIONS_IMG.includes(sub)
+            const isLabSub = SUBSECTIONS_LAB.includes(sub);
+            const sectionIcon = !isLabSub
               ? <Scan className="h-3.5 w-3.5 text-primary" />
               : <FlaskConical className="h-3.5 w-3.5 text-violet-500" />;
 
             return (
               <div key={sub} className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
-                {/* Subsection header */}
                 <button
-                  className="flex w-full items-center justify-between gap-2 px-4 py-3 hover:bg-muted/30 transition-colors"
+                  className="flex w-full items-center justify-between gap-2 px-4 py-3 transition-colors hover:bg-muted/30"
                   onClick={() => toggleSub(sub)}
                 >
                   <div className="flex items-center gap-2">
@@ -245,41 +247,73 @@ export function FonasaLookup() {
                     : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                 </button>
 
-                {/* Rows */}
                 {show && (
                   <div className="border-t border-border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border bg-muted/40 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                          <th className="px-4 py-2 text-left w-[110px]">Código</th>
+                          <th className="w-[100px] px-4 py-2 text-left">Código</th>
                           <th className="px-4 py-2 text-left">Denominación FONASA</th>
-                          <th className="px-4 py-2 text-center w-[110px]">DiagnoPRO</th>
+                          {hasQuoter && isLabSub && (
+                            <th className="w-[80px] px-2 py-2 text-center">Precio</th>
+                          )}
+                          <th className="w-[110px] px-4 py-2 text-center">DiagnoPRO</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
-                        {items.map((entry) => (
-                          <tr key={entry.code} className={`transition-colors ${entry.available ? "hover:bg-green-50/30" : "hover:bg-muted/20"}`}>
-                            <td className="px-4 py-2.5 font-mono text-xs font-semibold text-foreground tabular-nums">
-                              {fmtCode(entry.code)}
-                            </td>
-                            <td className="px-4 py-2.5 text-sm text-foreground leading-snug">
-                              {entry.name}
-                            </td>
-                            <td className="px-4 py-2.5 text-center">
-                              {entry.available ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-[11px] font-bold text-green-700">
-                                  <CheckCircle2 className="h-3 w-3" />
-                                  Sí
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
-                                  <XCircle className="h-3 w-3" />
-                                  No
-                                </span>
+                        {items.map((entry) => {
+                          const inCart = hasQuoter && labCart?.some((c) => c.code === entry.code);
+                          const dbEntry = isLabSub ? labDatabase.find((e) => e.code === entry.code) : undefined;
+                          return (
+                            <tr
+                              key={entry.code}
+                              className={`transition-colors ${entry.available ? "hover:bg-green-50/30" : "hover:bg-muted/20"}`}
+                            >
+                              <td className="px-4 py-2.5 font-mono text-xs font-semibold tabular-nums text-foreground">
+                                {fmtCode(entry.code)}
+                              </td>
+                              <td className="px-4 py-2.5 text-sm leading-snug text-foreground">
+                                {entry.name}
+                              </td>
+                              {hasQuoter && isLabSub && (
+                                <td className="px-2 py-2.5 text-center text-[11px] font-semibold text-foreground tabular-nums">
+                                  {dbEntry && dbEntry.particular > 0
+                                    ? formatCLP(dbEntry.particular)
+                                    : <span className="text-muted-foreground">—</span>}
+                                </td>
                               )}
-                            </td>
-                          </tr>
-                        ))}
+                              <td className="px-4 py-2.5 text-center">
+                                {entry.available ? (
+                                  hasQuoter && isLabSub ? (
+                                    <button
+                                      onClick={() => handleAdd(entry)}
+                                      disabled={!!inCart}
+                                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold transition ${
+                                        inCart
+                                          ? "bg-primary/10 text-primary"
+                                          : "bg-green-100 text-green-700 hover:bg-green-200"
+                                      }`}
+                                    >
+                                      {inCart
+                                        ? <><Check className="h-3 w-3" /> En carrito</>
+                                        : <><Plus className="h-3 w-3" /> Agregar</>}
+                                    </button>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-[11px] font-bold text-green-700">
+                                      <CheckCircle2 className="h-3 w-3" />
+                                      {isLabSub ? "Sí" : "Disponible"}
+                                    </span>
+                                  )
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                                    <XCircle className="h-3 w-3" />
+                                    No
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
