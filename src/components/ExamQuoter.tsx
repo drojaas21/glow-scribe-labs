@@ -1,7 +1,7 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
   Brain, ScanLine, Waves, Bone, HeartPulse, Droplets, Activity,
-  Search, X, Stethoscope, Plus, Minus, ChevronDown, MapPin,
+  Search, X, Stethoscope, Plus, Minus, ChevronDown, MapPin, Info,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -10,6 +10,8 @@ import {
 } from "@/data/catalog";
 import { formatCLP, normalize } from "@/lib/format";
 import { getExamCovers, examMatchesZone } from "@/data/examCovers";
+import { getPatientInfo } from "@/data/patientInfo";
+import { getImagingFonasaCode } from "@/data/imagingFonasaCodes";
 
 const icons: Record<string, LucideIcon> = { Brain, ScanLine, Waves, Bone, HeartPulse, Droplets, Activity };
 
@@ -21,21 +23,26 @@ export type CartItem = {
   qty: number;
 };
 
+type ImagingOverrideMap = Record<string, { part?: number; fa?: number; fbcd?: number }>;
+
 export function ExamQuoter({
   cart,
   setCart,
   prevision,
   convenio,
+  imagingOverrides,
 }: {
   cart: CartItem[];
   setCart: Dispatch<SetStateAction<CartItem[]>>;
   prevision: "particular" | "fa" | "fbcd";
   convenio: Convenio;
+  imagingOverrides?: ImagingOverrideMap;
 }) {
   const [activeCat, setActiveCat] = useState<ExamCategory | null>(null);
   const [nameQuery, setNameQuery] = useState("");
   const [zoneQuery, setZoneQuery] = useState("");
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  const [activeInfoKey, setActiveInfoKey] = useState<string | null>(null);
 
   const isSearching = nameQuery.trim().length >= 2 || zoneQuery.trim().length >= 2;
 
@@ -64,12 +71,32 @@ export function ExamQuoter({
     return examDatabase[activeCat].map((exam, index) => ({ category: activeCat, index, exam }));
   }, [searchResults, activeCat]);
 
+  const applyOverride = (exam: Exam, cat: ExamCategory): Exam => {
+    const ov = (imagingOverrides ?? {})[`${cat}::${exam.name}`];
+    if (!ov) return exam;
+    return {
+      ...exam,
+      part: ov.part ?? exam.part,
+      fa: ov.fa ?? exam.fa,
+      fbcd: ov.fbcd ?? exam.fbcd,
+    };
+  };
+
+  const getBasePrice = (exam: Exam, cat: ExamCategory) => {
+    const ov = (imagingOverrides ?? {})[`${cat}::${exam.name}`];
+    const part = ov?.part ?? exam.part;
+    const fa = ov?.fa ?? exam.fa;
+    const fbcd = ov?.fbcd ?? exam.fbcd;
+    return prevision === "particular" ? part : prevision === "fa" ? fa : fbcd;
+  };
+
   const addToCart = (category: ExamCategory, index: number, exam: Exam) => {
     const key = `${category}::${index}`;
+    const overriddenExam = applyOverride(exam, category);
     setCart((prev) => {
       const existing = prev.find((c) => c.key === key);
       if (existing) return prev.map((c) => c.key === key ? { ...c, qty: c.qty + 1 } : c);
-      return [...prev, { key, category, index, exam, qty: 1 }];
+      return [...prev, { key, category, index, exam: overriddenExam, qty: 1 }];
     });
   };
 
@@ -88,8 +115,9 @@ export function ExamQuoter({
     });
   };
 
-  const getBasePrice = (exam: Exam) =>
-    prevision === "particular" ? exam.part : prevision === "fa" ? exam.fa : exam.fbcd;
+  const toggleInfo = (key: string) => {
+    setActiveInfoKey((prev) => (prev === key ? null : key));
+  };
 
   const clearSearch = () => { setNameQuery(""); setZoneQuery(""); };
 
@@ -120,7 +148,6 @@ export function ExamQuoter({
 
       {/* ── Dual search ── */}
       <div className="mt-5 grid gap-2 sm:grid-cols-2">
-        {/* Name search */}
         <div className="relative">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -135,7 +162,6 @@ export function ExamQuoter({
             </button>
           )}
         </div>
-        {/* Zone search */}
         <div className="relative">
           <MapPin className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -172,55 +198,107 @@ export function ExamQuoter({
           const key = `${category}::${index}`;
           const cartItem = cart.find((c) => c.key === key);
           const meta = categoryMeta[category];
-          const price = getBasePrice(exam);
+          const price = getBasePrice(exam, category);
           const covers = getExamCovers(exam.name);
           const isExpanded = expandedKeys.has(key);
           const hasCovers = covers.length > 0;
+          const patientInfo = getPatientInfo(exam.name);
+          const fonasaCode = getImagingFonasaCode(exam.name);
+          const isInfoOpen = activeInfoKey === key;
+          const hasOverride = !!(imagingOverrides ?? {})[`${category}::${exam.name}`];
 
           return (
             <div
               key={key}
-              className="rounded-xl border border-border bg-background"
+              className={`rounded-xl border ${hasOverride ? "border-amber-300 dark:border-amber-700" : "border-border"} bg-background`}
             >
               {/* Main row */}
               <div className="flex w-full items-start gap-3 p-3">
-                <span
-                  className="mt-0.5 inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
-                  style={{ backgroundColor: meta.tint }}
-                >
-                  {meta.short}
-                </span>
+                {/* Category + FONASA code badges */}
+                <div className="flex shrink-0 flex-col items-start gap-1">
+                  <span
+                    className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
+                    style={{ backgroundColor: meta.tint }}
+                  >
+                    {meta.short}
+                  </span>
+                  {fonasaCode && (
+                    <span className="rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[9px] font-semibold text-muted-foreground">
+                      {fonasaCode}
+                    </span>
+                  )}
+                </div>
+
+                {/* Name + desc + price */}
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-semibold leading-snug text-foreground">{exam.name}</span>
                   <span className="mt-0.5 block text-xs text-muted-foreground line-clamp-1">{exam.desc}</span>
-                  <span className="mt-1 block text-xs font-semibold text-foreground">{formatCLP(price)}</span>
+                  <span className={`mt-1 block text-xs font-semibold ${hasOverride ? "text-amber-600 dark:text-amber-400" : "text-foreground"}`}>
+                    {formatCLP(price)}
+                    {hasOverride && <span className="ml-1 text-[9px] font-medium opacity-70">editado</span>}
+                  </span>
                 </span>
-                {cartItem ? (
-                  <div className="flex shrink-0 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-1.5 py-1">
+
+                {/* Actions: info icon + add/qty */}
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  {patientInfo && (
                     <button
-                      onClick={() => changeQty(key, -1)}
-                      className="flex h-6 w-6 items-center justify-center rounded-md bg-background text-foreground hover:bg-muted"
+                      onClick={() => toggleInfo(key)}
+                      title="Información para el paciente"
+                      className={`flex h-6 w-6 items-center justify-center rounded-full transition ${
+                        isInfoOpen
+                          ? "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400"
+                          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      }`}
                     >
-                      <Minus className="h-3 w-3" />
+                      <Info className="h-3.5 w-3.5" />
                     </button>
-                    <span className="w-5 text-center text-sm font-bold text-primary">{cartItem.qty}</span>
+                  )}
+
+                  {cartItem ? (
+                    <div className="flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-1.5 py-1">
+                      <button
+                        onClick={() => changeQty(key, -1)}
+                        className="flex h-6 w-6 items-center justify-center rounded-md bg-background text-foreground hover:bg-muted"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </button>
+                      <span className="w-5 text-center text-sm font-bold text-primary">{cartItem.qty}</span>
+                      <button
+                        onClick={() => changeQty(key, 1)}
+                        className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground hover:opacity-90"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
                     <button
-                      onClick={() => changeQty(key, 1)}
-                      className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground hover:opacity-90"
+                      onClick={() => addToCart(category, index, exam)}
+                      className="rounded-lg bg-primary p-2 text-primary-foreground transition hover:opacity-90"
+                      title="Agregar al carrito"
                     >
-                      <Plus className="h-3 w-3" />
+                      <Plus className="h-4 w-4" />
                     </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => addToCart(category, index, exam)}
-                    className="shrink-0 rounded-lg bg-primary p-2 text-primary-foreground transition hover:opacity-90"
-                    title="Agregar al carrito"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
+
+              {/* Patient info section */}
+              {patientInfo && isInfoOpen && (
+                <div className="border-t border-blue-100 bg-blue-50/60 px-3 py-2.5 dark:border-blue-900/30 dark:bg-blue-950/20">
+                  <div className="flex items-start gap-2">
+                    <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-500" />
+                    <div>
+                      <p className="mb-1 text-[11px] font-bold text-blue-700 dark:text-blue-400">
+                        Información para el paciente
+                      </p>
+                      <p className="text-[11px] leading-relaxed text-blue-800 dark:text-blue-300">
+                        {patientInfo}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Covers toggle */}
               {hasCovers && (

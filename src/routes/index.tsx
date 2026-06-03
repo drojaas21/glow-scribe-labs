@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Scan, FlaskConical, Wallet, FileDown, User, GraduationCap,
   ShoppingCart, Trash2, Plus, Minus, FlaskConical as LabIcon,
@@ -12,9 +12,11 @@ import { LabQuoter } from "@/components/LabQuoter";
 import { CashRegister } from "@/components/CashRegister";
 import { StudyMode } from "@/components/StudyMode";
 import { FonasaLookup } from "@/components/FonasaLookup";
-import { discountMatrix, convenioMeta, categoryMeta, type Convenio, type LabExam } from "@/data/catalog";
+import { discountMatrix, convenioMeta, categoryMeta, examDatabase, type Convenio, type LabExam } from "@/data/catalog";
 import { formatCLP } from "@/lib/format";
 import { generateCombinedPDF, type ExamCartPDFItem } from "@/lib/pdf";
+import { usePriceOverrides } from "@/hooks/usePriceOverrides";
+import { PriceEditor } from "@/components/PriceEditor";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -48,11 +50,39 @@ function Index() {
   const [tab, setTab] = useState<Tab>("examenes");
   const [imagingCart, setImagingCart] = useState<CartItem[]>([]);
   const [labCart, setLabCart] = useState<LabExam[]>([]);
+  const { overrides, setImagingOverride, setLabOverride, clearAll } = usePriceOverrides();
   const [prevision, setPrevision] = useState<Prevision>("particular");
   const [convenio, setConvenio] = useState<Convenio>("particular");
   const [patientName, setPatientName] = useState("");
   const [patientRut, setPatientRut] = useState("");
   const [observations, setObservations] = useState("");
+
+  // ── Auto-contraste TAC ────────────────────────────────────────────────────
+  const tacKeys = useMemo(
+    () => imagingCart.filter(i => i.category === "tac").map(i => i.key).sort().join(","),
+    [imagingCart]
+  );
+  useEffect(() => {
+    setImagingCart(prev => {
+      const tacItems = prev.filter(i => i.category === "tac");
+      const nonContrast = prev.filter(i => i.category !== "contraste");
+      if (tacItems.length === 0) return nonContrast;
+      const hasAngio = tacItems.some(i => i.exam.name.includes("Angio"));
+      const hasBody = tacItems.some(i => /Tórax|Abdomen|Pelvis|Cuello|Uro|Pielograf/i.test(i.exam.name));
+      const contrastIdx = hasAngio ? 2 : hasBody ? 1 : 0;
+      const contrastKey = `contraste::${contrastIdx}`;
+      const existing = prev.find(i => i.category === "contraste");
+      if (existing?.key === contrastKey) return prev;
+      const contrastItem: CartItem = {
+        key: contrastKey,
+        category: "contraste",
+        index: contrastIdx,
+        exam: examDatabase.contraste[contrastIdx],
+        qty: 1,
+      };
+      return [...nonContrast, contrastItem];
+    });
+  }, [tacKeys]);
 
   const imagingCount = imagingCart.reduce((s, i) => s + i.qty, 0);
   const labCount = labCart.length;
@@ -74,10 +104,15 @@ function Index() {
   const imagingRawTotal = imagingCart.reduce((s, item) => s + getImagingBase(item.exam) * item.qty, 0);
   const imagingDiscount = imagingRawTotal - imagingGrandTotal;
 
-  const getLabPrice = (e: LabExam) =>
-    prevision === "fa" ? (e.fonasa_a ?? e.particular) :
-    prevision === "fbcd" ? (e.fonasa_bcd ?? e.particular) :
-    e.particular;
+  const getLabPrice = (e: LabExam) => {
+    const ov = overrides.lab[e.code];
+    const particular = ov?.particular ?? e.particular;
+    const fonasa_a = ov?.fonasa_a !== undefined ? ov.fonasa_a : e.fonasa_a;
+    const fonasa_bcd = ov?.fonasa_bcd !== undefined ? ov.fonasa_bcd : e.fonasa_bcd;
+    return prevision === "fa" ? (fonasa_a ?? particular) :
+      prevision === "fbcd" ? (fonasa_bcd ?? particular) :
+      particular;
+  };
 
   const labSelectedTotal = labCart.reduce((s, e) => s + getLabPrice(e), 0);
   const combinedTotal = imagingGrandTotal + labSelectedTotal;
@@ -198,6 +233,7 @@ function Index() {
                   setCart={setImagingCart}
                   prevision={prevision}
                   convenio={convenio}
+                  imagingOverrides={overrides.imaging}
                 />
               </div>
               <div className={tab === "laboratorio" ? "" : "hidden"}>
@@ -487,6 +523,13 @@ function Index() {
       <footer className="mx-auto max-w-7xl px-4 py-8 text-center text-xs text-muted-foreground sm:px-6">
         DiagnoPRO Temuco · Cotización referencial sujeta a confirmación.
       </footer>
+
+      <PriceEditor
+        overrides={overrides}
+        setImagingOverride={setImagingOverride}
+        setLabOverride={setLabOverride}
+        clearAll={clearAll}
+      />
     </div>
   );
 }
