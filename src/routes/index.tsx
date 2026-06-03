@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   Scan, FlaskConical, Wallet, FileDown, User, GraduationCap,
   ShoppingCart, Trash2, Plus, Minus, FlaskConical as LabIcon,
-  Landmark, Building2, ShieldCheck, Users,
+  Landmark, Building2, ShieldCheck, Users, BookOpen,
   type LucideIcon,
 } from "lucide-react";
 import logo from "@/assets/logo-diagnopro.svg";
@@ -11,6 +11,7 @@ import { ExamQuoter, type CartItem } from "@/components/ExamQuoter";
 import { LabQuoter } from "@/components/LabQuoter";
 import { CashRegister } from "@/components/CashRegister";
 import { StudyMode } from "@/components/StudyMode";
+import { FonasaLookup } from "@/components/FonasaLookup";
 import { discountMatrix, convenioMeta, categoryMeta, type Convenio, type LabExam } from "@/data/catalog";
 import { formatCLP } from "@/lib/format";
 import { generateCombinedPDF, type ExamCartPDFItem } from "@/lib/pdf";
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type Tab = "examenes" | "laboratorio" | "caja" | "estudio";
+type Tab = "examenes" | "laboratorio" | "caja" | "estudio" | "fonasa";
 type Prevision = "particular" | "fa" | "fbcd";
 
 const tabs: { id: Tab; label: string; icon: typeof Scan }[] = [
@@ -27,6 +28,7 @@ const tabs: { id: Tab; label: string; icon: typeof Scan }[] = [
   { id: "laboratorio", label: "Laboratorio", icon: FlaskConical },
   { id: "caja", label: "Caja", icon: Wallet },
   { id: "estudio", label: "Estudio", icon: GraduationCap },
+  { id: "fonasa", label: "Códigos FONASA", icon: BookOpen },
 ];
 
 const previsionOpts: { key: Prevision; label: string }[] = [
@@ -124,7 +126,7 @@ function Index() {
     });
   };
 
-  const showSidebar = tab !== "estudio" && tab !== "caja";
+  const showSidebar = tab !== "estudio" && tab !== "caja" && tab !== "fonasa";
 
   return (
     <div className="min-h-screen bg-gradient-soft">
@@ -458,7 +460,7 @@ function Index() {
             </div>
           </div>
         ) : (
-          /* Full-width for Caja and Estudio */
+          /* Full-width for Caja, Estudio y FONASA */
           <div>
             <div className={tab === "caja" ? "" : "hidden"}>
               <CashRegister />
@@ -466,6 +468,7 @@ function Index() {
             <div className={tab === "estudio" ? "" : "hidden"}>
               <StudyMode />
             </div>
+            {tab === "fonasa" && <FonasaLookup />}
           </div>
         )}
       </main>
