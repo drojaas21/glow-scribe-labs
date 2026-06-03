@@ -36,3 +36,9 @@ id = "3a_VkGjV1EFkdAw462R5B"
 uri = "file://DiagnoPRO_Temuco_offline.zip"
 type = "unspecified"
 title = "DiagnoPRO Temuco — Offline completo"
+
+[[outputs]]
+id = "Di6Mx69ptNThNF846NKXD"
+uri = "file://diagno-pro-offline.zip"
+type = "unspecified"
+title = "DiagnoPRO Temuco — Index Offline (3.6 MB)"
