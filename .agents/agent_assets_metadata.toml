@@ -30,3 +30,9 @@ id = "LWK7pAZSVhnfl-LfIy8-I"
 uri = "file://DiagnoPRO_Temuco_static.zip"
 type = "unspecified"
 title = "DiagnoPRO Temuco — App estática (ZIP)"
+
+[[outputs]]
+id = "3a_VkGjV1EFkdAw462R5B"
+uri = "file://DiagnoPRO_Temuco_offline.zip"
+type = "unspecified"
+title = "DiagnoPRO Temuco — Offline completo"
