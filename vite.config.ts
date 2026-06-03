@@ -5,7 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 import viteTsConfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-  base: "./",
+  base: "/",
   plugins: [
     TanStackRouterVite({ target: "react", autoCodeSplitting: true }),
     react(),
@@ -17,5 +17,16 @@ export default defineConfig({
     port: 5000,
     strictPort: true,
     allowedHosts: true,
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom"],
+          router: ["@tanstack/react-router"],
+          pdf: ["jspdf", "jspdf-autotable"],
+        },
+      },
+    },
   },
 });
