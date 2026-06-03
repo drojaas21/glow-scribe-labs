@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Scan, FlaskConical, Wallet, FileDown, User } from "lucide-react";
+import { Scan, FlaskConical, Wallet, FileDown, User, GraduationCap } from "lucide-react";
 import logo from "@/assets/logo-diagnopro.svg";
 import { ExamQuoter, type CartItem } from "@/components/ExamQuoter";
 import { LabQuoter } from "@/components/LabQuoter";
 import { CashRegister } from "@/components/CashRegister";
+import { StudyMode } from "@/components/StudyMode";
 import { discountMatrix, convenioMeta, type Convenio, type LabExam } from "@/data/catalog";
 import { formatCLP } from "@/lib/format";
 import { generateCombinedPDF, type ExamCartPDFItem } from "@/lib/pdf";
@@ -13,13 +14,14 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type Tab = "examenes" | "laboratorio" | "caja";
+type Tab = "examenes" | "laboratorio" | "caja" | "estudio";
 type Prevision = "particular" | "fa" | "fbcd";
 
 const tabs: { id: Tab; label: string; icon: typeof Scan }[] = [
   { id: "examenes", label: "Imagenología", icon: Scan },
   { id: "laboratorio", label: "Laboratorio", icon: FlaskConical },
   { id: "caja", label: "Caja", icon: Wallet },
+  { id: "estudio", label: "Estudio", icon: GraduationCap },
 ];
 
 const previsionOpts: { key: Prevision; label: string }[] = [
@@ -130,7 +132,7 @@ function Index() {
         </div>
 
         {/* ── Paciente y previsión (shared) ── */}
-        <div className="mb-5 rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
+        <div className={`mb-5 rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)] ${tab === "estudio" ? "hidden" : ""}`}>
           <h3 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-foreground">
             <User className="h-4 w-4 text-primary" />
             Datos del paciente y previsión
@@ -216,9 +218,12 @@ function Index() {
         <div className={tab === "caja" ? "" : "hidden"}>
           <CashRegister />
         </div>
+        <div className={tab === "estudio" ? "" : "hidden"}>
+          <StudyMode />
+        </div>
 
         {/* ── Resumen y cotización ── */}
-        {hasAnything && (
+        {hasAnything && tab !== "estudio" && (
           <div className="mt-6 rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
             <h3 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-foreground">
               <FileDown className="h-4 w-4 text-primary" />
