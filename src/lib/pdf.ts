@@ -10,38 +10,39 @@ const BRAND_DARK: [number, number, number] = [20, 54, 93];
 
 function header(doc: jsPDF, title: string) {
   doc.setFillColor(...BRAND_DARK);
-  doc.rect(0, 0, 210, 30, "F");
+  doc.rect(0, 0, 210, 34, "F");
   doc.setFillColor(...BRAND);
-  doc.rect(0, 28, 210, 2, "F");
+  doc.rect(0, 32, 210, 2, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text("DiagnoPRO Temuco", 15, 14);
+  doc.setFontSize(20);
+  doc.text("DiagnoPRO Temuco", 15, 16);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(title, 15, 22);
+  doc.setFontSize(11);
+  doc.text(title, 15, 26);
   const now = new Date();
-  doc.setFontSize(8);
+  doc.setFontSize(9);
   doc.text(
-    now.toLocaleDateString("es-CL") + " " + now.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }),
-    195, 14, { align: "right" }
+    now.toLocaleDateString("es-CL") + "  " + now.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }),
+    195, 16, { align: "right" }
   );
 }
 
 function patientBox(doc: jsPDF, y: number, name: string, rut: string) {
   doc.setDrawColor(...BRAND);
   doc.setFillColor(241, 247, 252);
-  doc.roundedRect(15, y, 180, 16, 2, 2, "FD");
+  doc.roundedRect(15, y, 180, 22, 2, 2, "FD");
   doc.setTextColor(...BRAND_DARK);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("PACIENTE", 20, y + 6);
-  doc.text("RUT", 120, y + 6);
+  doc.text("PACIENTE", 20, y + 8);
+  doc.text("RUT", 120, y + 8);
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
   doc.setTextColor(40, 40, 40);
-  doc.text(name || "No especificado", 20, y + 12);
-  doc.text(rut || "No especificado", 120, y + 12);
-  return y + 22;
+  doc.text(name || "No especificado", 20, y + 17);
+  doc.text(rut || "No especificado", 120, y + 17);
+  return y + 28;
 }
 
 function observationsBox(doc: jsPDF, y: number, text: string): number {
@@ -50,18 +51,18 @@ function observationsBox(doc: jsPDF, y: number, text: string): number {
   doc.setFillColor(241, 247, 252);
   doc.setTextColor(...BRAND_DARK);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.text("OBSERVACIÓN", 15, y);
-  y += 4;
+  y += 5;
   doc.setFont("helvetica", "normal");
   doc.setTextColor(60, 60, 60);
-  doc.setFontSize(9);
-  const lines = doc.splitTextToSize(text, 180);
+  doc.setFontSize(10);
+  const lines = doc.splitTextToSize(text, 176);
   doc.setFillColor(241, 247, 252);
   doc.setDrawColor(...BRAND);
-  doc.roundedRect(15, y, 180, lines.length * 5 + 6, 2, 2, "FD");
-  doc.text(lines, 19, y + 5);
-  return y + lines.length * 5 + 12;
+  doc.roundedRect(15, y, 180, lines.length * 6 + 8, 2, 2, "FD");
+  doc.text(lines, 19, y + 7);
+  return y + lines.length * 6 + 16;
 }
 
 function footer(doc: jsPDF) {
@@ -92,12 +93,12 @@ function checkPage(doc: jsPDF, y: number, needed: number, pageTitle: string): nu
   if (y + needed > 276) {
     doc.addPage();
     doc.setFillColor(...BRAND_DARK);
-    doc.rect(0, 0, 210, 12, "F");
+    doc.rect(0, 0, 210, 14, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.text("DiagnoPRO Temuco · " + pageTitle, 15, 8);
-    return 18;
+    doc.setFontSize(10);
+    doc.text("DiagnoPRO Temuco · " + pageTitle, 15, 9);
+    return 20;
   }
   return y;
 }
@@ -114,50 +115,50 @@ function prepSectionImaging(doc: jsPDF, y: number, items: ExamCartPDFItem[]): nu
   }
   if (preps.length === 0) return y;
 
-  y = checkPage(doc, y, 22, "Preparaciones Requeridas");
+  y = checkPage(doc, y, 26, "Preparaciones Requeridas");
   doc.setFillColor(...BRAND);
-  doc.rect(15, y, 180, 9, "F");
+  doc.rect(15, y, 180, 10, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.text("PREPARACIONES REQUERIDAS", 105, y + 6, { align: "center" });
-  y += 13;
+  doc.setFontSize(10);
+  doc.text("PREPARACIONES REQUERIDAS", 105, y + 7, { align: "center" });
+  y += 14;
 
   for (const { name, steps, postProtocol } of preps) {
-    const estH = 10 + steps.length * 5 + (postProtocol ? 14 : 0);
+    const estH = 12 + steps.length * 6 + (postProtocol ? 16 : 0);
     y = checkPage(doc, y, estH, "Preparaciones Requeridas");
 
     doc.setFillColor(241, 247, 252);
     doc.setDrawColor(...BRAND);
-    doc.roundedRect(15, y, 180, 8, 1, 1, "FD");
+    doc.roundedRect(15, y, 180, 10, 1, 1, "FD");
     doc.setTextColor(...BRAND_DARK);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.text(name, 18, y + 5.5);
-    y += 10;
+    doc.setFontSize(10);
+    doc.text(name, 18, y + 7);
+    y += 13;
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
+    doc.setFontSize(10);
     doc.setTextColor(40, 40, 40);
     for (const step of steps) {
-      y = checkPage(doc, y, 6, "Preparaciones Requeridas");
+      y = checkPage(doc, y, 7, "Preparaciones Requeridas");
       const lines = doc.splitTextToSize(`• ${step}`, 172);
       doc.text(lines, 20, y);
-      y += lines.length * 4.5;
+      y += lines.length * 5.5;
     }
 
     if (postProtocol) {
-      y = checkPage(doc, y, 16, "Preparaciones Requeridas");
+      y = checkPage(doc, y, 18, "Preparaciones Requeridas");
       y += 2;
       const postLines = doc.splitTextToSize(`⚠  ${postProtocol}`, 166);
       doc.setFillColor(255, 251, 235);
       doc.setDrawColor(234, 179, 8);
-      doc.roundedRect(15, y, 180, postLines.length * 4.5 + 7, 1, 1, "FD");
+      doc.roundedRect(15, y, 180, postLines.length * 5.5 + 9, 1, 1, "FD");
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(7.5);
+      doc.setFontSize(9);
       doc.setTextColor(120, 80, 0);
-      doc.text(postLines, 19, y + 4.5);
-      y += postLines.length * 4.5 + 11;
+      doc.text(postLines, 19, y + 6);
+      y += postLines.length * 5.5 + 13;
     }
     y += 4;
   }
@@ -165,14 +166,14 @@ function prepSectionImaging(doc: jsPDF, y: number, items: ExamCartPDFItem[]): nu
 }
 
 function labPrepSection(doc: jsPDF, y: number): number {
-  y = checkPage(doc, y, 38, "Preparación de Laboratorio");
+  y = checkPage(doc, y, 46, "Preparación de Laboratorio");
   doc.setFillColor(...BRAND);
-  doc.rect(15, y, 180, 9, "F");
+  doc.rect(15, y, 180, 10, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.text("PREPARACIÓN DE LABORATORIO", 105, y + 6, { align: "center" });
-  y += 13;
+  doc.setFontSize(10);
+  doc.text("PREPARACIÓN DE LABORATORIO", 105, y + 7, { align: "center" });
+  y += 14;
 
   const steps = [
     "Ayuno mínimo 8 horas y máximo 12 horas (sólidos y líquidos). Última colación recomendada: 23:00 hrs del día anterior.",
@@ -181,196 +182,14 @@ function labPrepSection(doc: jsPDF, y: number): number {
   ];
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
+  doc.setFontSize(10);
   doc.setTextColor(40, 40, 40);
   for (const step of steps) {
     const lines = doc.splitTextToSize(`• ${step}`, 172);
     doc.text(lines, 20, y);
-    y += lines.length * 4.5 + 1;
+    y += lines.length * 5.5 + 2;
   }
   return y + 4;
-}
-
-export function generateExamPDF(args: {
-  items: ExamCartPDFItem[];
-  convenio: Convenio;
-  prevision: string;
-  grandTotal: number;
-  patientName: string;
-  patientRut: string;
-  observations: string;
-}) {
-  const doc = new jsPDF();
-  header(doc, "Cotización de Exámenes de Imagenología");
-  let y = patientBox(doc, 38, args.patientName, args.patientRut);
-
-  // Info row: previsión + convenio
-  doc.setFillColor(241, 247, 252);
-  doc.setDrawColor(...BRAND);
-  doc.roundedRect(15, y, 180, 12, 2, 2, "FD");
-  doc.setTextColor(...BRAND_DARK);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.text("Previsión:", 20, y + 8);
-  doc.text("Convenio:", 90, y + 8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(40, 40, 40);
-  doc.text(args.prevision, 48, y + 8);
-  doc.text(convenioMeta[args.convenio], 115, y + 8);
-  y += 18;
-
-  autoTable(doc, {
-    startY: y,
-    head: [["Tipo", "Examen", "Cant.", `Precio (${args.prevision})`, "Dto.", "Subtotal"]],
-    body: args.items.map((it) => [
-      categoryMeta[it.category].short,
-      it.exam.name,
-      String(it.qty),
-      formatCLP(it.baseUnit),
-      it.discountPct > 0 ? `${it.discountPct}%` : "—",
-      formatCLP(it.lineTotal),
-    ]),
-    theme: "striped",
-    headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold" },
-    columnStyles: {
-      0: { cellWidth: 14, fontStyle: "bold", textColor: BRAND_DARK },
-      2: { halign: "center", cellWidth: 14 },
-      3: { halign: "right", cellWidth: 30 },
-      4: { halign: "center", cellWidth: 16, textColor: [22, 163, 74] },
-      5: { halign: "right", cellWidth: 30, fontStyle: "bold" },
-    },
-    styles: { fontSize: 8.5, cellPadding: 2.5 },
-  });
-
-  // @ts-expect-error lastAutoTable injected by plugin
-  y = doc.lastAutoTable.finalY + 8;
-
-  const totalBefore = args.items.reduce((s, it) => s + it.baseUnit * it.qty, 0);
-  const totalSaved = totalBefore - args.grandTotal;
-
-  if (totalSaved > 0) {
-    doc.setFillColor(240, 253, 244);
-    doc.setDrawColor(22, 163, 74);
-    doc.roundedRect(15, y, 180, 10, 2, 2, "FD");
-    doc.setTextColor(22, 163, 74);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    doc.text(`Ahorro por convenio ${convenioMeta[args.convenio]}: ${formatCLP(totalSaved)}`, 105, y + 7, { align: "center" });
-    y += 16;
-  }
-
-  doc.setFillColor(...BRAND_DARK);
-  doc.roundedRect(15, y, 180, 22, 2, 2, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text("VALOR TOTAL A PAGAR", 22, y + 8);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.text(formatCLP(args.grandTotal), 188, y + 16, { align: "right" });
-  y += 32;
-
-  y = observationsBox(doc, y, args.observations);
-  prepSectionImaging(doc, y, args.items);
-
-  footer(doc);
-  const firstName = args.items[0]?.exam.name.slice(0, 20).replace(/[^a-zA-Z0-9]/g, "_") ?? "Examen";
-  doc.save(`Cotizacion_${firstName}.pdf`);
-}
-
-// ── Laboratorio PDF ────────────────────────────────────────────────────────
-
-export function generateLabPDF(args: {
-  items: LabExam[];
-  prevision: string;
-  selectedTotal: number;
-  patientName: string;
-  patientRut: string;
-  observations: string;
-}) {
-  const doc = new jsPDF();
-  header(doc, "Cotización de Exámenes de Laboratorio");
-  let y = patientBox(doc, 38, args.patientName, args.patientRut);
-
-  // Info row: previsión
-  doc.setFillColor(241, 247, 252);
-  doc.setDrawColor(...BRAND);
-  doc.roundedRect(15, y, 180, 12, 2, 2, "FD");
-  doc.setTextColor(...BRAND_DARK);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.text("Previsión:", 20, y + 8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(40, 40, 40);
-  doc.text(args.prevision, 48, y + 8);
-  y += 18;
-
-  const totalFonasaA = args.items.reduce((s, e) => s + (e.fonasa_a ?? e.particular), 0);
-  const totalFonasaBcd = args.items.reduce((s, e) => s + (e.fonasa_bcd ?? e.particular), 0);
-  const totalPart = args.items.reduce((s, e) => s + e.particular, 0);
-
-  autoTable(doc, {
-    startY: y,
-    head: [["Código", "Examen", "FONASA A", "FONASA B/C/D", "Particular"]],
-    body: args.items.map((e) => [
-      e.code,
-      e.name,
-      e.fonasa_a != null ? formatCLP(e.fonasa_a) : "—",
-      e.fonasa_bcd != null ? formatCLP(e.fonasa_bcd) : "—",
-      e.particular > 0 ? formatCLP(e.particular) : "Consultar",
-    ]),
-    theme: "striped",
-    headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold" },
-    columnStyles: {
-      0: { cellWidth: 24, fontStyle: "bold", textColor: BRAND_DARK },
-      2: { halign: "right", cellWidth: 28 },
-      3: { halign: "right", cellWidth: 28 },
-      4: { halign: "right", cellWidth: 28 },
-    },
-    styles: { fontSize: 8, cellPadding: 2.5 },
-  });
-
-  // @ts-expect-error lastAutoTable injected by plugin
-  let yy = doc.lastAutoTable.finalY + 8;
-
-  // Three reference totals
-  const colW = 58;
-  const totals = [
-    { label: "FONASA A", value: formatCLP(totalFonasaA) },
-    { label: "FONASA B/C/D", value: formatCLP(totalFonasaBcd) },
-    { label: "PARTICULAR", value: formatCLP(totalPart) },
-  ];
-  totals.forEach((t, i) => {
-    const x = 15 + i * (colW + 2);
-    doc.setFillColor(241, 247, 252);
-    doc.setDrawColor(...BRAND);
-    doc.roundedRect(x, yy, colW, 22, 2, 2, "FD");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7);
-    doc.setTextColor(80, 80, 80);
-    doc.text(t.label, x + colW / 2, yy + 7, { align: "center" });
-    doc.setFontSize(11);
-    doc.text(t.value, x + colW / 2, yy + 17, { align: "center" });
-  });
-  yy += 30;
-
-  // Big total box — shows selected prevision total
-  doc.setFillColor(...BRAND_DARK);
-  doc.roundedRect(15, yy, 180, 22, 2, 2, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text(`TOTAL A PAGAR (${args.prevision.toUpperCase()})`, 22, yy + 8);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.text(formatCLP(args.selectedTotal), 188, yy + 16, { align: "right" });
-  yy += 32;
-
-  yy = observationsBox(doc, yy, args.observations);
-  labPrepSection(doc, yy);
-
-  footer(doc);
-  doc.save("Cotizacion_Laboratorio.pdf");
 }
 
 // ── Cotización Integral (Imagenología + Laboratorio) ─────────────────────────
@@ -390,144 +209,203 @@ export function generateCombinedPDF(args: {
   observations: string;
 }) {
   const doc = new jsPDF();
-  header(doc, "Cotización Integral de Exámenes");
-  let y = patientBox(doc, 38, args.patientName, args.patientRut);
+  header(doc, "Cotización de Exámenes");
+  let y = patientBox(doc, 42, args.patientName, args.patientRut);
 
+  // Info row: previsión + convenio
   doc.setFillColor(241, 247, 252);
   doc.setDrawColor(...BRAND);
-  doc.roundedRect(15, y, 180, 12, 2, 2, "FD");
+  doc.roundedRect(15, y, 180, 14, 2, 2, "FD");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
+  doc.setFontSize(10);
   doc.setTextColor(...BRAND_DARK);
-  doc.text("Convenio:", 20, y + 8);
+  doc.text("Previsión:", 20, y + 9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(40, 40, 40);
-  doc.text(args.convenioLabel, 50, y + 8);
+  doc.text(args.previsionLabel, 55, y + 9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...BRAND_DARK);
-  doc.text("Previsión:", 115, y + 8);
+  doc.text("Convenio:", 115, y + 9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(40, 40, 40);
-  doc.text(args.previsionLabel, 145, y + 8);
-  y += 18;
+  doc.text(args.convenioLabel, 148, y + 9);
+  y += 20;
 
   // ── Imagenología ──────────────────────────────────────────────────────────
   if (args.imagingItems.length > 0) {
     doc.setFillColor(...BRAND_DARK);
-    doc.rect(15, y, 180, 8, "F");
+    doc.rect(15, y, 180, 10, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.text("EXÁMENES DE IMAGENOLOGÍA", 105, y + 5.5, { align: "center" });
-    y += 10;
+    doc.setFontSize(11);
+    doc.text("EXÁMENES DE IMAGENOLOGÍA", 105, y + 7, { align: "center" });
+    y += 12;
 
     autoTable(doc, {
       startY: y,
-      head: [["Examen", "Cant.", "P. Base", "Dcto.", "Total"]],
+      head: [["Examen", "Cant.", "Precio base", "Descuento", "Total a pagar"]],
       body: args.imagingItems.map((item) => [
         item.exam.name,
         String(item.qty),
         formatCLP(item.baseUnit),
-        item.discountPct > 0 ? `-${item.discountPct}%` : "—",
+        item.discountPct > 0 ? `−${item.discountPct}%` : "—",
         formatCLP(item.lineTotal),
       ]),
       theme: "striped",
-      headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold" },
+      headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold", fontSize: 10 },
       columnStyles: {
-        1: { halign: "center", cellWidth: 16 },
-        2: { halign: "right", cellWidth: 30 },
-        3: { halign: "center", cellWidth: 20 },
-        4: { halign: "right", cellWidth: 30 },
+        1: { halign: "center", cellWidth: 18 },
+        2: { halign: "right", cellWidth: 34 },
+        3: { halign: "center", cellWidth: 24, textColor: [22, 163, 74] },
+        4: { halign: "right", cellWidth: 34, fontStyle: "bold" },
       },
-      styles: { fontSize: 8, cellPadding: 2.5 },
+      styles: { fontSize: 10, cellPadding: 4 },
     });
 
     // @ts-expect-error lastAutoTable injected by plugin
-    y = doc.lastAutoTable.finalY + 4;
+    y = doc.lastAutoTable.finalY + 5;
 
     if (args.imagingDiscount > 0) {
       doc.setFillColor(240, 253, 244);
       doc.setDrawColor(34, 197, 94);
-      doc.roundedRect(15, y, 180, 8, 1, 1, "FD");
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(8);
+      doc.roundedRect(15, y, 180, 10, 1, 1, "FD");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
       doc.setTextColor(21, 128, 61);
-      doc.text(`Descuento ${args.convenioLabel}: −${formatCLP(args.imagingDiscount)}`, 18, y + 5.5);
-      y += 10;
+      doc.text(`Ahorro por convenio ${args.convenioLabel}:  −${formatCLP(args.imagingDiscount)}`, 18, y + 7);
+      y += 13;
     }
 
     doc.setFillColor(220, 235, 250);
-    doc.roundedRect(15, y, 180, 9, 1, 1, "F");
+    doc.roundedRect(15, y, 180, 12, 1, 1, "F");
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
+    doc.setFontSize(11);
     doc.setTextColor(...BRAND_DARK);
-    doc.text("Subtotal Imagenología", 18, y + 6.5);
-    doc.text(formatCLP(args.imagingTotal), 192, y + 6.5, { align: "right" });
-    y += 14;
+    doc.text("Subtotal Imagenología", 18, y + 8.5);
+    doc.text(formatCLP(args.imagingTotal), 192, y + 8.5, { align: "right" });
+    y += 18;
   }
 
   // ── Laboratorio ───────────────────────────────────────────────────────────
   if (args.labItems.length > 0) {
-    y = checkPage(doc, y, 22, "Laboratorio");
+    y = checkPage(doc, y, 26, "Laboratorio");
     doc.setFillColor(...BRAND_DARK);
-    doc.rect(15, y, 180, 8, "F");
+    doc.rect(15, y, 180, 10, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.text("EXÁMENES DE LABORATORIO", 105, y + 5.5, { align: "center" });
-    y += 10;
+    doc.setFontSize(11);
+    doc.text("EXÁMENES DE LABORATORIO", 105, y + 7, { align: "center" });
+    y += 12;
+
+    const priceColLabel = args.previsionLabel.toUpperCase();
 
     autoTable(doc, {
       startY: y,
-      head: [["Código", "Examen", "FONASA A", "FONASA B/C/D", "Particular"]],
-      body: args.labItems.map((e) => [
-        e.code,
-        e.name,
-        e.fonasa_a != null ? formatCLP(e.fonasa_a) : "—",
-        e.fonasa_bcd != null ? formatCLP(e.fonasa_bcd) : "—",
-        e.particular > 0 ? formatCLP(e.particular) : "Consultar",
-      ]),
+      head: [["Código", "Nombre del examen", `Precio ${priceColLabel}`]],
+      body: args.labItems.map((e) => {
+        const price =
+          args.previsionKey === "fa" ? (e.fonasa_a ?? e.particular) :
+          args.previsionKey === "fbcd" ? (e.fonasa_bcd ?? e.particular) :
+          e.particular;
+        return [
+          e.code,
+          e.name.replace(/\*PARTICULAR\*/gi, "").replace(/\s{2,}/g, " ").trim(),
+          price > 0 ? formatCLP(price) : "Consultar",
+        ];
+      }),
       theme: "striped",
-      headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold" },
+      headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold", fontSize: 10 },
       columnStyles: {
-        0: { cellWidth: 24, fontStyle: "bold", textColor: BRAND_DARK },
-        2: { halign: "right", cellWidth: 28 },
-        3: { halign: "right", cellWidth: 28 },
-        4: { halign: "right", cellWidth: 28 },
+        0: { cellWidth: 28, fontStyle: "bold", textColor: BRAND_DARK, fontSize: 9 },
+        2: { halign: "right", cellWidth: 40, fontStyle: "bold" },
       },
-      styles: { fontSize: 8, cellPadding: 2.5 },
+      styles: { fontSize: 10, cellPadding: 4 },
     });
 
     // @ts-expect-error lastAutoTable injected by plugin
-    y = doc.lastAutoTable.finalY + 4;
+    y = doc.lastAutoTable.finalY + 5;
 
     doc.setFillColor(220, 235, 250);
-    doc.roundedRect(15, y, 180, 9, 1, 1, "F");
+    doc.roundedRect(15, y, 180, 12, 1, 1, "F");
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
+    doc.setFontSize(11);
     doc.setTextColor(...BRAND_DARK);
-    doc.text(`Subtotal Laboratorio (${args.previsionLabel})`, 18, y + 6.5);
-    doc.text(formatCLP(args.labTotal), 192, y + 6.5, { align: "right" });
-    y += 14;
+    doc.text(`Subtotal Laboratorio (${args.previsionLabel})`, 18, y + 8.5);
+    doc.text(formatCLP(args.labTotal), 192, y + 8.5, { align: "right" });
+    y += 18;
   }
 
   // ── Total general ─────────────────────────────────────────────────────────
-  y = checkPage(doc, y, 32, "Total General");
+  y = checkPage(doc, y, 38, "Total General");
   doc.setFillColor(...BRAND_DARK);
-  doc.roundedRect(15, y, 180, 22, 2, 2, "F");
+  doc.roundedRect(15, y, 180, 28, 3, 3, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text(`TOTAL GENERAL (${args.previsionLabel.toUpperCase()})`, 22, y + 8);
+  doc.setFontSize(11);
+  doc.text(`TOTAL A PAGAR  (${args.previsionLabel})`, 22, y + 10);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.text(formatCLP(args.grandTotal), 188, y + 16, { align: "right" });
-  y += 32;
+  doc.setFontSize(26);
+  doc.text(formatCLP(args.grandTotal), 190, y + 22, { align: "right" });
+  y += 38;
 
   y = observationsBox(doc, y, args.observations);
   if (args.imagingItems.length > 0) y = prepSectionImaging(doc, y, args.imagingItems);
   if (args.labItems.length > 0) labPrepSection(doc, y);
 
   footer(doc);
-  doc.save("Cotizacion_Integral.pdf");
+  doc.save("Cotizacion_DiagnoPRO.pdf");
+}
+
+// ── Keep legacy exports for backwards compatibility ──────────────────────────
+
+export function generateExamPDF(args: {
+  items: ExamCartPDFItem[];
+  convenio: Convenio;
+  prevision: string;
+  grandTotal: number;
+  patientName: string;
+  patientRut: string;
+  observations: string;
+}) {
+  generateCombinedPDF({
+    imagingItems: args.items,
+    labItems: [],
+    patientName: args.patientName,
+    patientRut: args.patientRut,
+    previsionLabel: args.prevision,
+    previsionKey: "particular",
+    convenioLabel: convenioMeta[args.convenio],
+    imagingTotal: args.grandTotal,
+    imagingDiscount: args.items.reduce((s, it) => s + it.discountAmt, 0),
+    labTotal: 0,
+    grandTotal: args.grandTotal,
+    observations: args.observations,
+  });
+}
+
+export function generateLabPDF(args: {
+  items: LabExam[];
+  prevision: string;
+  selectedTotal: number;
+  patientName: string;
+  patientRut: string;
+  observations: string;
+}) {
+  const previsionKey =
+    args.prevision === "FONASA A" ? "fa" :
+    args.prevision.includes("B") ? "fbcd" : "particular";
+  generateCombinedPDF({
+    imagingItems: [],
+    labItems: args.items,
+    patientName: args.patientName,
+    patientRut: args.patientRut,
+    previsionLabel: args.prevision,
+    previsionKey,
+    convenioLabel: "Particular / Sin Convenio",
+    imagingTotal: 0,
+    imagingDiscount: 0,
+    labTotal: args.selectedTotal,
+    grandTotal: args.selectedTotal,
+    observations: args.observations,
+  });
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
-  Search, X, Plus, Trash2, FlaskConical, Check,
+  Search, X, Plus, FlaskConical, Check,
   Layers, AlertCircle, ChevronDown,
 } from "lucide-react";
 import { labDatabase, type LabExam } from "@/data/catalog";
@@ -8,10 +8,8 @@ import { labProfiles, type LabProfile } from "@/data/profiles";
 import { soloParticularCodes } from "@/data/soloParticular";
 import { formatCLP, normalize } from "@/lib/format";
 
-/** Codes explicitly blocked from sale (exams not done internally). */
 const blockedCodes = new Set(["0301095", "0306118", "0306123"]);
 
-/** Strip noise tokens from display names (e.g. "*PARTICULAR*"). */
 function cleanName(name: string): string {
   return name.replace(/\*PARTICULAR\*/gi, "").replace(/\s{2,}/g, " ").trim();
 }
@@ -19,14 +17,6 @@ function cleanName(name: string): string {
 function isBlocked(e: LabExam): boolean {
   return blockedCodes.has(e.code) || e.obs.toUpperCase().includes("NO SE REALIZA");
 }
-
-type Prevision = "particular" | "fa" | "fbcd";
-
-const previsionOptions: { key: Prevision; label: string }[] = [
-  { key: "particular", label: "Particular" },
-  { key: "fa", label: "FONASA A" },
-  { key: "fbcd", label: "FONASA B/C/D" },
-];
 
 export function LabQuoter({
   cart,
@@ -66,7 +56,6 @@ export function LabQuoter({
     if (cart.some((c) => c.code === e.code)) return;
     setCart((p) => [...p, e]);
   };
-  const remove = (code: string) => setCart((p) => p.filter((c) => c.code !== code));
 
   const addProfile = (p: LabProfile) => {
     const dbEntry = p.code ? labDatabase.find((e) => e.code === p.code) : undefined;
@@ -81,194 +70,87 @@ export function LabQuoter({
     add(item);
   };
 
-  const totalFonasaA = cart.reduce((s, e) => s + (e.fonasa_a ?? e.particular), 0);
-  const totalFonasaBcd = cart.reduce((s, e) => s + (e.fonasa_bcd ?? e.particular), 0);
-  const totalPart = cart.reduce((s, e) => s + e.particular, 0);
-
-  const selectedTotal =
-    prevision === "fa" ? totalFonasaA : prevision === "fbcd" ? totalFonasaBcd : totalPart;
-  const previsionLabel =
-    prevision === "fa" ? "FONASA A" : prevision === "fbcd" ? "FONASA B/C/D" : "Particular";
+  void prevision;
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
-      {/* ── LEFT column ── */}
-      <div className="min-w-0 space-y-5">
-
-        {/* ── Profiles ── */}
-        <div className="overflow-hidden rounded-2xl border bg-card shadow-[var(--shadow-card)]">
-          <button
-            onClick={() => setProfilesOpen((v) => !v)}
-            className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-secondary/40"
-          >
-            <Layers className="h-4 w-4 shrink-0 text-primary" />
-            <div className="min-w-0 flex-1">
-              <span className="text-sm font-bold uppercase tracking-wide text-foreground">
-                Perfiles destacados
-              </span>
-              <span className="ml-2 text-xs text-muted-foreground">
-                ({labProfiles.length} agrupaciones)
-              </span>
-            </div>
-            <ChevronDown
-              className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${profilesOpen ? "rotate-180" : ""}`}
-            />
-          </button>
-
-          {profilesOpen && (
-            <div className="border-t border-border px-5 pb-5 pt-4">
-              <p className="mb-3 text-xs text-muted-foreground">
-                Haz clic en "Agregar" para incluir el perfil en la cotización.
-              </p>
-              <div className="grid gap-2.5 sm:grid-cols-2">
-                {labProfiles.map((p) => <ProfileCard key={p.name} p={p} cart={cart} onAdd={addProfile} />)}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ── Catalog ── */}
-        <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">Catálogo de laboratorio</h3>
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar por código FONASA o nombre…"
-              className="w-full rounded-xl border border-input bg-background py-3 pl-10 pr-10 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
-            />
-            {query && (
-              <button
-                onClick={() => setQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+    <div className="min-w-0 space-y-5">
+      {/* Profiles */}
+      <div className="overflow-hidden rounded-2xl border bg-card shadow-[var(--shadow-card)]">
+        <button
+          onClick={() => setProfilesOpen((v) => !v)}
+          className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-secondary/40"
+        >
+          <Layers className="h-4 w-4 shrink-0 text-primary" />
+          <div className="min-w-0 flex-1">
+            <span className="text-sm font-bold uppercase tracking-wide text-foreground">
+              Perfiles destacados
+            </span>
+            <span className="ml-2 text-xs text-muted-foreground">
+              ({labProfiles.length} agrupaciones)
+            </span>
           </div>
-          <p className="mt-2 px-1 text-xs text-muted-foreground">
-            {query.trim().length < 2
-              ? `${labDatabase.length} exámenes en catálogo`
-              : `${mainResults.length + soloResults.length} resultado(s)`}
-          </p>
+          <ChevronDown
+            className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${profilesOpen ? "rotate-180" : ""}`}
+          />
+        </button>
 
-          <div className="mt-2 max-h-[520px] space-y-2 overflow-y-auto pr-1">
-            <ExamList items={mainResults} cart={cart} onAdd={add} />
-
-            {soloResults.length > 0 && (
-              <>
-                <div className="flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 dark:border-orange-700 dark:bg-orange-950/40">
-                  <AlertCircle className="h-3.5 w-3.5 shrink-0 text-orange-500 dark:text-orange-400" />
-                  <p className="text-[11px] font-semibold text-orange-700 dark:text-orange-400">
-                    Solo Particulares — Exámenes externos ({soloResults.length})
-                  </p>
-                </div>
-                <ExamList items={soloResults} cart={cart} onAdd={add} isSolo />
-              </>
-            )}
+        {profilesOpen && (
+          <div className="border-t border-border px-5 pb-5 pt-4">
+            <p className="mb-3 text-xs text-muted-foreground">
+              Haz clic en "Agregar" para incluir el perfil en la cotización.
+            </p>
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              {labProfiles.map((p) => <ProfileCard key={p.name} p={p} cart={cart} onAdd={addProfile} />)}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* ── RIGHT column ── */}
-      <div className="min-w-0 space-y-5">
-
-
-        {/* ── Cart ── */}
-        <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-bold uppercase tracking-wide text-foreground">
-              Cotización ({cart.length})
-            </h3>
-            {cart.length > 0 && (
-              <button onClick={() => setCart([])} className="text-xs font-medium text-destructive hover:underline">
-                Vaciar
-              </button>
-            )}
-          </div>
-
-          {cart.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-12 text-center text-sm text-muted-foreground">
-              <FlaskConical className="h-8 w-8 opacity-40" />
-              Agrega exámenes desde el catálogo o perfiles.
-            </div>
-          ) : (
-            <div className="max-h-[260px] space-y-2 overflow-y-auto pr-1">
-              {cart.map((e) => {
-                const isSolo = soloParticularCodes.has(e.code);
-                const isBoleta = e.obs?.toUpperCase().includes("BOLETA");
-                return (
-                  <div
-                    key={e.code}
-                    className={`flex items-center gap-2 rounded-lg border p-2.5 ${
-                      isSolo
-                        ? "border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20"
-                        : isBoleta
-                        ? "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
-                        : "border-border bg-background"
-                    }`}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className={`truncate text-xs font-semibold ${isSolo ? "text-orange-700 dark:text-orange-400" : "text-foreground"}`}>
-                        {cleanName(e.name)}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {e.code} · {e.particular > 0 ? formatCLP(e.particular) : "Consultar"}
-                        {isBoleta && !isSolo && (
-                          <span className="ml-1.5 rounded bg-amber-100 px-1 font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">BOLETA</span>
-                        )}
-                      </p>
-                    </div>
-                    <button onClick={() => remove(e.code)} className="shrink-0 text-muted-foreground hover:text-destructive">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+      {/* Catalog */}
+      <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
+        <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">Catálogo de laboratorio</h3>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar por código FONASA o nombre…"
+            className="w-full rounded-xl border border-input bg-background py-3 pl-10 pr-10 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
           )}
-
-          {/* Three reference totals */}
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {[
-              { key: "fa" as const, label: "FONASA A", value: totalFonasaA },
-              { key: "fbcd" as const, label: "FONASA B/C/D", value: totalFonasaBcd },
-              { key: "particular" as const, label: "PARTICULAR", value: totalPart },
-            ].map((t) => {
-              const active = prevision === t.key;
-              return (
-                <div
-                  key={t.key}
-                  className={`rounded-xl border p-2.5 text-center transition-all ${
-                    active
-                      ? "border-primary/40 bg-primary/5"
-                      : "border-border bg-secondary/40"
-                  }`}
-                >
-                  <p className={`text-[9px] font-bold uppercase tracking-wide ${active ? "text-primary" : "text-muted-foreground"}`}>{t.label}</p>
-                  <p className="mt-1 text-sm font-bold text-foreground">{formatCLP(t.value)}</p>
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-3 rounded-xl bg-gradient-brand px-4 py-4 text-primary-foreground shadow-[var(--shadow-lift)]">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <span className="text-sm font-medium opacity-90">Total a pagar</span>
-                <p className="text-[10px] opacity-70">{previsionLabel}</p>
-              </div>
-              <span className="text-3xl font-bold tracking-tight">{formatCLP(selectedTotal)}</span>
-            </div>
-          </div>
         </div>
+        <p className="mt-2 px-1 text-xs text-muted-foreground">
+          {query.trim().length < 2
+            ? `${labDatabase.length} exámenes en catálogo`
+            : `${mainResults.length + soloResults.length} resultado(s)`}
+        </p>
 
+        <div className="mt-2 max-h-[520px] space-y-2 overflow-y-auto pr-1">
+          <ExamList items={mainResults} cart={cart} onAdd={add} />
+
+          {soloResults.length > 0 && (
+            <>
+              <div className="flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 dark:border-orange-700 dark:bg-orange-950/40">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0 text-orange-500 dark:text-orange-400" />
+                <p className="text-[11px] font-semibold text-orange-700 dark:text-orange-400">
+                  Solo Particulares — Exámenes externos ({soloResults.length})
+                </p>
+              </div>
+              <ExamList items={soloResults} cart={cart} onAdd={add} isSolo />
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
 }
-
-/* ── Profile card ─────────────────────────────────────────────────────────── */
 
 function ProfileCard({ p, cart, onAdd }: { p: LabProfile; cart: LabExam[]; onAdd: (p: LabProfile) => void }) {
   const cartKey = p.code ?? `PERFIL-${p.name}`;
@@ -327,8 +209,6 @@ function ProfileCard({ p, cart, onAdd }: { p: LabProfile; cart: LabExam[]; onAdd
     </div>
   );
 }
-
-/* ── Catalog exam list ─────────────────────────────────────────────────────── */
 
 function ExamList({
   items,

@@ -1,24 +1,15 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
   Brain, ScanLine, Waves, Bone, HeartPulse, Droplets, Activity,
-  Search, X, Stethoscope, Plus, Minus, Trash2, ShoppingCart,
-  AlertTriangle, Info,
+  Search, X, Stethoscope, Plus, Minus,
   type LucideIcon,
 } from "lucide-react";
 import {
-  examDatabase, discountMatrix, categoryMeta, categoryOrder,
-  convenioMeta, type Exam, type ExamCategory, type Convenio,
+  examDatabase, categoryMeta, categoryOrder,
+  type Exam, type ExamCategory, type Convenio,
 } from "@/data/catalog";
 import { formatCLP, normalize } from "@/lib/format";
-import { needsCreatinineAlert, needsRMSafetyAlert } from "@/data/imagingPrep";
-import { Landmark, Building2, ShieldCheck, Users } from "lucide-react";
 
-const convenioIcons: Record<Convenio, LucideIcon> = {
-  particular: ShieldCheck,
-  banco: Landmark,
-  caja: Building2,
-  araucana: Users,
-};
 const icons: Record<string, LucideIcon> = { Brain, ScanLine, Waves, Bone, HeartPulse, Droplets, Activity };
 
 export type CartItem = {
@@ -34,18 +25,14 @@ export function ExamQuoter({
   setCart,
   prevision,
   convenio,
-  setConvenio,
 }: {
   cart: CartItem[];
   setCart: Dispatch<SetStateAction<CartItem[]>>;
   prevision: "particular" | "fa" | "fbcd";
   convenio: Convenio;
-  setConvenio: Dispatch<SetStateAction<Convenio>>;
 }) {
   const [activeCat, setActiveCat] = useState<ExamCategory | null>(null);
   const [query, setQuery] = useState("");
-  const [creatinineAlertDismissed, setCreatinineAlertDismissed] = useState(false);
-  const [rmAlertDismissed, setRmAlertDismissed] = useState(false);
 
   const searchResults = useMemo(() => {
     if (query.trim().length < 2) return null;
@@ -77,319 +64,113 @@ export function ExamQuoter({
 
   const changeQty = (key: string, delta: number) => {
     setCart((prev) =>
-      prev
-        .map((c) => c.key === key ? { ...c, qty: Math.max(1, c.qty + delta) } : c)
-        .filter((c) => c.qty > 0)
+      prev.map((c) => c.key === key ? { ...c, qty: Math.max(1, c.qty + delta) } : c)
     );
   };
-
-  const removeFromCart = (key: string) => setCart((prev) => prev.filter((c) => c.key !== key));
 
   const getBasePrice = (exam: Exam) =>
     prevision === "particular" ? exam.part : prevision === "fa" ? exam.fa : exam.fbcd;
 
-  const calcItem = (item: CartItem) => {
-    const base = getBasePrice(item.exam);
-    const pct = discountMatrix[item.category]?.[convenio] ?? 0;
-    const discountAmt = Math.round(base * (pct / 100));
-    const discountedUnit = base - discountAmt;
-    const lineTotal = discountedUnit * item.qty;
-    return { base, pct, discountAmt, discountedUnit, lineTotal };
-  };
-
-  const grandTotal = cart.reduce((s, item) => s + calcItem(item).lineTotal, 0);
-  const totalDiscount = cart.reduce((s, item) => {
-    const { discountAmt, base } = calcItem(item);
-    return s + discountAmt * item.qty;
-  }, 0);
-
-  const previsionLabel =
-    prevision === "particular" ? "Particular" : prevision === "fa" ? "FONASA A" : "FONASA B / C / D";
-
-  const hasContrastExam = cart.some((item) => needsCreatinineAlert(item.category));
-  const hasRMExam = cart.some((item) => needsRMSafetyAlert(item.category));
-
-
   return (
-    <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
-      {/* LEFT: catalog */}
-      <div className="min-w-0 rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
-        <SectionTitle>Categoría de examen</SectionTitle>
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-          {categoryOrder.map((cat) => {
-            const meta = categoryMeta[cat];
-            const Icon = icons[meta.icon];
-            const active = activeCat === cat && !searchResults;
-            return (
-              <button
-                key={cat}
-                onClick={() => { setActiveCat(cat); setQuery(""); }}
-                className={`group flex flex-col items-center gap-2 rounded-xl border px-2 py-3 text-center transition-all ${
-                  active
-                    ? "border-transparent bg-gradient-brand text-primary-foreground shadow-[var(--shadow-lift)]"
-                    : "border-border bg-secondary/40 text-secondary-foreground hover:border-primary/40 hover:bg-secondary"
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                <span className="text-[11px] font-semibold leading-tight">{meta.short}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="relative mt-5">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar examen por nombre o descripción…"
-            className="w-full rounded-xl border border-input bg-background py-3 pl-10 pr-10 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
-          />
-          {query && (
-            <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-              <X className="h-4 w-4" />
+    <div className="min-w-0 rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
+      <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">Categoría de examen</h3>
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        {categoryOrder.map((cat) => {
+          const meta = categoryMeta[cat];
+          const Icon = icons[meta.icon];
+          const active = activeCat === cat && !searchResults;
+          return (
+            <button
+              key={cat}
+              onClick={() => { setActiveCat(cat); setQuery(""); }}
+              className={`group flex flex-col items-center gap-2 rounded-xl border px-2 py-3 text-center transition-all ${
+                active
+                  ? "border-transparent bg-gradient-brand text-primary-foreground shadow-[var(--shadow-lift)]"
+                  : "border-border bg-secondary/40 text-secondary-foreground hover:border-primary/40 hover:bg-secondary"
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+              <span className="text-[11px] font-semibold leading-tight">{meta.short}</span>
             </button>
-          )}
-        </div>
-
-        <div className="mt-4 max-h-[460px] space-y-2 overflow-y-auto pr-1">
-          {list.length === 0 && (
-            <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-muted-foreground">
-              <Stethoscope className="h-8 w-8 opacity-40" />
-              {searchResults ? "Sin resultados para tu búsqueda." : "Selecciona una categoría o busca un examen."}
-            </div>
-          )}
-          {searchResults && (
-            <p className="px-1 pb-1 text-xs font-medium text-muted-foreground">{searchResults.length} resultado(s)</p>
-          )}
-          {list.map(({ category, index, exam }) => {
-            const key = `${category}::${index}`;
-            const cartItem = cart.find((c) => c.key === key);
-            const meta = categoryMeta[category];
-            return (
-              <div
-                key={key}
-                className="flex w-full items-start gap-3 rounded-xl border border-border bg-background p-3"
-              >
-                <span
-                  className="mt-0.5 inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
-                  style={{ backgroundColor: meta.tint }}
-                >
-                  {meta.short}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold leading-snug text-foreground">{exam.name}</span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground line-clamp-1">{exam.desc}</span>
-                  <span className="mt-1 block text-xs font-semibold text-foreground">{formatCLP(exam.part)} <span className="font-normal text-muted-foreground">particular</span></span>
-                </span>
-                {cartItem ? (
-                  <div className="flex shrink-0 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-1.5 py-1">
-                    <button
-                      onClick={() => changeQty(key, -1)}
-                      className="flex h-6 w-6 items-center justify-center rounded-md bg-background text-foreground hover:bg-muted"
-                    >
-                      <Minus className="h-3 w-3" />
-                    </button>
-                    <span className="w-5 text-center text-sm font-bold text-primary">{cartItem.qty}</span>
-                    <button
-                      onClick={() => changeQty(key, 1)}
-                      className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground hover:opacity-90"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => addToCart(category, index, exam)}
-                    className="shrink-0 rounded-lg bg-primary p-2 text-primary-foreground transition hover:opacity-90"
-                    title="Agregar al carrito"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
+          );
+        })}
       </div>
 
-      {/* RIGHT: convenio + cart + PDF */}
-      <div className="min-w-0 space-y-5">
-        {/* Convenio */}
-        <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
-          <SectionTitle>Convenio comercial</SectionTitle>
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            {(Object.keys(convenioMeta) as Convenio[]).map((c) => {
-              const Icon = convenioIcons[c];
-              const isSel = convenio === c;
-              const anyPct = cart.length > 0
-                ? (discountMatrix[cart[0].category]?.[c] ?? 0)
-                : 0;
-              return (
-                <button
-                  key={c}
-                  onClick={() => setConvenio(c)}
-                  className={`relative flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-all ${
-                    isSel ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-border bg-background hover:border-primary/40"
-                  }`}
-                >
-                  {c !== "particular" && (
-                    <span className={`absolute right-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${anyPct > 0 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-muted text-muted-foreground"}`}>
-                      {anyPct > 0 ? `-${anyPct}%` : "0%"}
-                    </span>
-                  )}
-                  <Icon className={`h-5 w-5 ${isSel ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className="text-[10px] font-semibold leading-tight text-foreground">{convenioMeta[c]}</span>
-                </button>
-              );
-            })}
+      <div className="relative mt-5">
+        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar examen por nombre o descripción…"
+          className="w-full rounded-xl border border-input bg-background py-3 pl-10 pr-10 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
+        />
+        {query && (
+          <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      <div className="mt-4 max-h-[460px] space-y-2 overflow-y-auto pr-1">
+        {list.length === 0 && (
+          <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-muted-foreground">
+            <Stethoscope className="h-8 w-8 opacity-40" />
+            {searchResults ? "Sin resultados para tu búsqueda." : "Selecciona una categoría o busca un examen."}
           </div>
-        </div>
-
-        {/* Cart */}
-        <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-foreground">
-              <ShoppingCart className="h-4 w-4 text-primary" />
-              Carrito ({cart.reduce((s, c) => s + c.qty, 0)} unidad{cart.reduce((s, c) => s + c.qty, 0) !== 1 ? "es" : ""})
-            </h3>
-            {cart.length > 0 && (
-              <button
-                onClick={() => { setCart([]); setCreatinineAlertDismissed(false); setRmAlertDismissed(false); }}
-                className="text-xs font-medium text-destructive hover:underline"
-              >Vaciar</button>
-            )}
-          </div>
-
-          {/* ── Alertas clínicas ── */}
-          {hasContrastExam && !creatinineAlertDismissed && (
-            <div className="mb-3 flex gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs dark:border-amber-800/70 dark:bg-amber-950/30">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-              <div className="min-w-0 flex-1">
-                <p className="font-bold text-amber-800 dark:text-amber-300">Verificación de función renal recomendada</p>
-                <p className="mt-0.5 leading-relaxed text-amber-700 dark:text-amber-400">
-                  Los exámenes con contraste iodado (TAC / Medio de Contraste) requieren Creatinina en sangre previa.
-                  Agregue este examen desde la pestaña <strong>Laboratorio</strong>.
-                </p>
-              </div>
-              <button
-                onClick={() => setCreatinineAlertDismissed(true)}
-                className="shrink-0 text-amber-400 hover:text-amber-600"
-                title="Cerrar"
+        )}
+        {searchResults && (
+          <p className="px-1 pb-1 text-xs font-medium text-muted-foreground">{searchResults.length} resultado(s)</p>
+        )}
+        {list.map(({ category, index, exam }) => {
+          const key = `${category}::${index}`;
+          const cartItem = cart.find((c) => c.key === key);
+          const meta = categoryMeta[category];
+          const price = getBasePrice(exam);
+          return (
+            <div
+              key={key}
+              className="flex w-full items-start gap-3 rounded-xl border border-border bg-background p-3"
+            >
+              <span
+                className="mt-0.5 inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
+                style={{ backgroundColor: meta.tint }}
               >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
-
-          {hasRMExam && !rmAlertDismissed && (
-            <div className="mb-3 flex gap-2.5 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs dark:border-blue-800/70 dark:bg-blue-950/30">
-              <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
-              <div className="min-w-0 flex-1">
-                <p className="font-bold text-blue-800 dark:text-blue-300">Encuesta de seguridad RM obligatoria</p>
-                <p className="mt-0.5 leading-relaxed text-blue-700 dark:text-blue-400">
-                  El paciente debe completar la encuesta de seguridad al llegar. Informar sobre marcapasos,
-                  implantes metálicos, clips vasculares, stents u otros dispositivos.
-                </p>
-              </div>
-              <button
-                onClick={() => setRmAlertDismissed(true)}
-                className="shrink-0 text-blue-400 hover:text-blue-600"
-                title="Cerrar"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
-
-          {cart.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
-              <ShoppingCart className="h-7 w-7 opacity-30" />
-              Agrega exámenes desde el catálogo.
-            </div>
-          ) : (
-            <div className="max-h-[280px] space-y-2 overflow-y-auto pr-1">
-              {cart.map((item) => {
-                const { base, pct, discountedUnit, lineTotal } = calcItem(item);
-                const meta = categoryMeta[item.category];
-                return (
-                  <div key={item.key} className="rounded-xl border border-border bg-background p-3">
-                    <div className="flex items-start gap-2">
-                      <span
-                        className="mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
-                        style={{ backgroundColor: meta.tint }}
-                      >
-                        {meta.short}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-semibold text-foreground">{item.exam.name}</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {formatCLP(base)} c/u
-                          {pct > 0 && <span className="ml-1 text-green-600 dark:text-green-400">−{pct}% → {formatCLP(discountedUnit)}</span>}
-                        </p>
-                      </div>
-                      <button onClick={() => removeFromCart(item.key)} className="shrink-0 text-muted-foreground hover:text-destructive">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-1.5 py-1">
-                        <button
-                          onClick={() => changeQty(item.key, -1)}
-                          className="flex h-5 w-5 items-center justify-center rounded text-foreground hover:bg-muted"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="w-5 text-center text-xs font-bold text-foreground">{item.qty}</span>
-                        <button
-                          onClick={() => changeQty(item.key, 1)}
-                          className="flex h-5 w-5 items-center justify-center rounded bg-primary text-primary-foreground hover:opacity-90"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                      </div>
-                      <span className="text-sm font-bold text-foreground">{formatCLP(lineTotal)}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {cart.length > 0 && (
-            <div className="mt-4 space-y-2">
-              {totalDiscount > 0 && (
-                <>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal sin descuento</span>
-                    <span className="text-muted-foreground line-through">{formatCLP(grandTotal + totalDiscount)}</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm dark:border-green-800 dark:bg-green-950/30">
-                    <span className="font-semibold text-green-700 dark:text-green-400">
-                      Descuento {convenioMeta[convenio]}
-                    </span>
-                    <span className="text-lg font-bold text-green-700 dark:text-green-400">−{formatCLP(totalDiscount)}</span>
-                  </div>
-                </>
-              )}
-              <div className="rounded-xl bg-gradient-brand px-4 py-4 text-primary-foreground shadow-[var(--shadow-lift)]">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <span className="text-[11px] font-medium opacity-90">Total a pagar</span>
-                    <p className="text-[10px] opacity-70">{previsionLabel} · {convenioMeta[convenio]}</p>
-                  </div>
-                  <span className="text-3xl font-bold tracking-tight">{formatCLP(grandTotal)}</span>
+                {meta.short}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold leading-snug text-foreground">{exam.name}</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground line-clamp-1">{exam.desc}</span>
+                <span className="mt-1 block text-xs font-semibold text-foreground">{formatCLP(price)}</span>
+              </span>
+              {cartItem ? (
+                <div className="flex shrink-0 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-1.5 py-1">
+                  <button
+                    onClick={() => changeQty(key, -1)}
+                    className="flex h-6 w-6 items-center justify-center rounded-md bg-background text-foreground hover:bg-muted"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                  <span className="w-5 text-center text-sm font-bold text-primary">{cartItem.qty}</span>
+                  <button
+                    onClick={() => changeQty(key, 1)}
+                    className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground hover:opacity-90"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
                 </div>
-              </div>
+              ) : (
+                <button
+                  onClick={() => addToCart(category, index, exam)}
+                  className="shrink-0 rounded-lg bg-primary p-2 text-primary-foreground transition hover:opacity-90"
+                  title="Agregar al carrito"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              )}
             </div>
-          )}
-        </div>
-
+          );
+        })}
       </div>
     </div>
   );
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">{children}</h3>;
 }
