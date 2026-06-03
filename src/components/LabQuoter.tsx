@@ -35,24 +35,34 @@ export function LabQuoter({
   const isSearching = nameQuery.trim().length >= 2 || codeQuery.trim().length >= 1;
 
   const { mainResults, soloResults } = useMemo(() => {
-    const all = (() => {
-      if (!isSearching) return labDatabase;
-      const nq = normalize(nameQuery);
-      const cq = codeQuery.trim().toLowerCase();
-      return labDatabase.filter((e) => {
-        const nameMatch = nq.length >= 2
-          ? normalize(cleanName(e.name)).includes(nq)
-          : true;
-        const codeMatch = cq.length >= 1
-          ? e.code.toLowerCase().includes(cq)
-          : true;
-        return nameMatch && codeMatch;
-      });
-    })();
+    const nq = normalize(nameQuery);
+    const cq = codeQuery.trim().toLowerCase();
+
+    // Deduplicate by code — keep only the first occurrence per code so that
+    // "note" rows (e.g. second RAC/HOMA/GAME entries that describe what's
+    // included) never appear as standalone search results.
+    const seen = new Set<string>();
+    const unique = labDatabase.filter((e) => {
+      if (seen.has(e.code)) return false;
+      seen.add(e.code);
+      return true;
+    });
+
+    const filtered = !isSearching
+      ? unique
+      : unique.filter((e) => {
+          const nameMatch = nq.length >= 2
+            ? normalize(cleanName(e.name)).includes(nq)
+            : true;
+          const codeMatch = cq.length >= 1
+            ? e.code.toLowerCase().includes(cq)
+            : true;
+          return nameMatch && codeMatch;
+        });
 
     const main: LabExam[] = [];
     const solo: LabExam[] = [];
-    for (const e of all) {
+    for (const e of filtered) {
       if (soloParticularCodes.has(e.code)) solo.push(e);
       else main.push(e);
     }
@@ -282,7 +292,7 @@ function ExamList({
 }) {
   return (
     <>
-      {items.map((e) => {
+      {items.map((e, idx) => {
         const inCart = cart.some((c) => c.code === e.code);
         const blocked = isBlocked(e);
         const isBoleta = !isSolo && e.obs?.toUpperCase().includes("BOLETA");
@@ -297,7 +307,7 @@ function ExamList({
         else if (isBoleta) codeCls = "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300";
 
         return (
-          <div key={e.code} className={`flex items-start gap-3 rounded-xl border p-3 ${cardCls} ${blocked ? "opacity-50" : ""}`}>
+          <div key={`${e.code}-${idx}`} className={`flex items-start gap-3 rounded-xl border p-3 ${cardCls} ${blocked ? "opacity-50" : ""}`}>
             <span className={`mt-0.5 shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold ${codeCls}`}>
               {e.code}
             </span>
