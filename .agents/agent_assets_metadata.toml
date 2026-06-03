@@ -42,3 +42,9 @@ id = "Di6Mx69ptNThNF846NKXD"
 uri = "file://diagno-pro-offline.zip"
 type = "unspecified"
 title = "DiagnoPRO Temuco — Index Offline (3.6 MB)"
+
+[[outputs]]
+id = "ToA62x5l1UEl5OK6DtAME"
+uri = "file://diagnopro-dist.zip"
+type = "unspecified"
+title = "DiagnoPRO Temuco — dist para Cloudflare Pages"
