@@ -1,6 +1,7 @@
 import { useState, useMemo, type Dispatch, type SetStateAction } from "react";
 import { Search, CheckCircle2, XCircle, FlaskConical, Scan, ChevronDown, ChevronUp, Plus, Check } from "lucide-react";
-import { labDatabase, type LabExam } from "@/data/catalog";
+import { labDatabase } from "@/data/catalog";
+import { type LabCartItem } from "@/components/LabQuoter";
 import { imagingFonasaCodes, labNotAvailable, type FonasaEntry } from "@/data/fonasaCodes";
 import { formatCLP } from "@/lib/format";
 
@@ -71,8 +72,8 @@ export function FonasaLookup({
   labCart,
   setLabCart,
 }: {
-  labCart?: LabExam[];
-  setLabCart?: Dispatch<SetStateAction<LabExam[]>>;
+  labCart?: LabCartItem[];
+  setLabCart?: Dispatch<SetStateAction<LabCartItem[]>>;
 }) {
   const [query, setQuery] = useState("");
   const [sectionFilter, setSectionFilter] = useState<SectionFilter>("all");
@@ -116,8 +117,8 @@ export function FonasaLookup({
     if (!setLabCart) return;
     const dbEntry = labDatabase.find((e) => e.code === entry.code);
     if (!dbEntry) return;
-    if (labCart?.some((c) => c.code === entry.code)) return;
-    setLabCart((prev) => [...prev, dbEntry]);
+    if (labCart?.some((c) => c.exam.code === entry.code)) return;
+    setLabCart((prev) => [...prev, { exam: dbEntry, qty: 1 }]);
   };
 
   const availCount = ALL_DATASET.filter((e) => e.available).length;

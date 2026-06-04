@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import logo from "@/assets/logo-diagnopro.svg";
 import { ExamQuoter, type CartItem } from "@/components/ExamQuoter";
-import { LabQuoter } from "@/components/LabQuoter";
+import { LabQuoter, type LabCartItem } from "@/components/LabQuoter";
 import { CashRegister } from "@/components/CashRegister";
 import { StudyMode } from "@/components/StudyMode";
 import { FonasaLookup } from "@/components/FonasaLookup";
@@ -49,7 +49,7 @@ const convenioIcons: Record<Convenio, LucideIcon> = {
 function Index() {
   const [tab, setTab] = useState<Tab>("examenes");
   const [imagingCart, setImagingCart] = useState<CartItem[]>([]);
-  const [labCart, setLabCart] = useState<LabExam[]>([]);
+  const [labCart, setLabCart] = useState<LabCartItem[]>([]);
   const { overrides, setImagingOverride, setLabOverride, clearAll } = usePriceOverrides();
   const [prevision, setPrevision] = useState<Prevision>("particular");
   const [convenio, setConvenio] = useState<Convenio>("particular");
@@ -85,7 +85,7 @@ function Index() {
   }, [tacKeys]);
 
   const imagingCount = imagingCart.reduce((s, i) => s + i.qty, 0);
-  const labCount = labCart.length;
+  const labCount = labCart.reduce((s, i) => s + i.qty, 0);
   const totalCartCount = imagingCount + labCount;
   const hasAnything = totalCartCount > 0;
 
@@ -114,7 +114,7 @@ function Index() {
       particular;
   };
 
-  const labSelectedTotal = labCart.reduce((s, e) => s + getLabPrice(e), 0);
+  const labSelectedTotal = labCart.reduce((s, i) => s + getLabPrice(i.exam) * i.qty, 0);
   const combinedTotal = imagingGrandTotal + labSelectedTotal;
 
   const changeImagingQty = (key: string, delta: number) => {
@@ -124,7 +124,11 @@ function Index() {
     );
   };
   const removeImaging = (key: string) => setImagingCart((prev) => prev.filter((c) => c.key !== key));
-  const removeLab = (code: string) => setLabCart((prev) => prev.filter((c) => c.code !== code));
+  const removeLab = (code: string) => setLabCart((prev) => prev.filter((i) => i.exam.code !== code));
+  const changeLabQty = (code: string, delta: number) =>
+    setLabCart((prev) =>
+      prev.map((i) => i.exam.code === code ? { ...i, qty: Math.max(1, i.qty + delta) } : i)
+    );
 
   const handleGeneratePDF = () => {
     const imagingItems: ExamCartPDFItem[] = imagingCart.map((item) => {
@@ -391,17 +395,27 @@ function Index() {
                             <LabIcon className="h-3 w-3" /> Laboratorio
                           </p>
                         )}
-                        {labCart.map((e) => {
-                          const price = getLabPrice(e);
-                          const name = e.name.replace(/\*PARTICULAR\*/gi, "").replace(/\s{2,}/g, " ").trim();
+                        {labCart.map((item) => {
+                          const unitPrice = getLabPrice(item.exam);
+                          const lineTotal = unitPrice * item.qty;
+                          const name = item.exam.name.replace(/\*PARTICULAR\*/gi, "").replace(/\s{2,}/g, " ").trim();
                           return (
-                            <div key={e.code} className="flex items-center gap-2 rounded-xl border border-border bg-background p-3">
+                            <div key={item.exam.code} className="flex items-center gap-2 rounded-xl border border-border bg-background p-3">
                               <div className="min-w-0 flex-1">
                                 <p className="truncate text-xs font-semibold text-foreground">{name}</p>
-                                <p className="text-[10px] text-muted-foreground">{e.code} · {previsionLabel}</p>
+                                <p className="text-[10px] text-muted-foreground">{item.exam.code} · {previsionLabel}</p>
                               </div>
-                              <span className="shrink-0 text-sm font-bold text-foreground">{price > 0 ? formatCLP(price) : "Consultar"}</span>
-                              <button onClick={() => removeLab(e.code)} className="shrink-0 text-muted-foreground hover:text-destructive">
+                              <div className="flex shrink-0 items-center gap-1 rounded-lg border border-border bg-secondary/40 px-1 py-0.5">
+                                <button onClick={() => changeLabQty(item.exam.code, -1)} className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-background hover:text-foreground">
+                                  <Minus className="h-3 w-3" />
+                                </button>
+                                <span className="w-4 text-center text-xs font-bold text-foreground">{item.qty}</span>
+                                <button onClick={() => changeLabQty(item.exam.code, 1)} className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-background hover:text-foreground">
+                                  <Plus className="h-3 w-3" />
+                                </button>
+                              </div>
+                              <span className="shrink-0 text-sm font-bold text-foreground">{lineTotal > 0 ? formatCLP(lineTotal) : "Consultar"}</span>
+                              <button onClick={() => removeLab(item.exam.code)} className="shrink-0 text-muted-foreground hover:text-destructive">
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             </div>

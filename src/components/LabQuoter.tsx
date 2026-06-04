@@ -1,6 +1,6 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
-  Search, X, Plus, FlaskConical, Check,
+  Search, X, Plus, Minus, FlaskConical, Check,
   Layers, AlertCircle, ChevronDown, Hash, FileText,
 } from "lucide-react";
 import { labDatabase, type LabExam } from "@/data/catalog";
@@ -8,6 +8,8 @@ import { labProfiles, type LabProfile } from "@/data/profiles";
 import { soloParticularCodes } from "@/data/soloParticular";
 import { formatCLP, normalize } from "@/lib/format";
 import { generateLabIndicacionesPDF } from "@/lib/pdf";
+
+export type LabCartItem = { exam: LabExam; qty: number };
 
 const blockedCodes = new Set(["0301095", "0306118", "0306123"]);
 
@@ -24,8 +26,8 @@ export function LabQuoter({
   setCart,
   prevision,
 }: {
-  cart: LabExam[];
-  setCart: Dispatch<SetStateAction<LabExam[]>>;
+  cart: LabCartItem[];
+  setCart: Dispatch<SetStateAction<LabCartItem[]>>;
   prevision: "particular" | "fa" | "fbcd";
 }) {
   const [nameQuery, setNameQuery] = useState("");
@@ -38,9 +40,6 @@ export function LabQuoter({
     const nq = normalize(nameQuery);
     const cq = codeQuery.trim().toLowerCase();
 
-    // Deduplicate by code — keep only the first occurrence per code so that
-    // "note" rows (e.g. second RAC/HOMA/GAME entries that describe what's
-    // included) never appear as standalone search results.
     const seen = new Set<string>();
     const unique = labDatabase.filter((e) => {
       if (seen.has(e.code)) return false;
@@ -70,8 +69,17 @@ export function LabQuoter({
   }, [nameQuery, codeQuery, isSearching]);
 
   const add = (e: LabExam) => {
-    if (cart.some((c) => c.code === e.code)) return;
-    setCart((p) => [...p, e]);
+    setCart((p) => {
+      const existing = p.find((i) => i.exam.code === e.code);
+      if (existing) return p.map((i) => i.exam.code === e.code ? { ...i, qty: i.qty + 1 } : i);
+      return [...p, { exam: e, qty: 1 }];
+    });
+  };
+
+  const changeQty = (code: string, delta: number) => {
+    setCart((p) =>
+      p.map((i) => i.exam.code === code ? { ...i, qty: Math.max(1, i.qty + delta) } : i)
+    );
   };
 
   const addProfile = (p: LabProfile) => {
@@ -155,7 +163,6 @@ export function LabQuoter({
 
         {/* Dual search */}
         <div className="grid gap-2 sm:grid-cols-2">
-          {/* Name search */}
           <div className="relative">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -170,7 +177,6 @@ export function LabQuoter({
               </button>
             )}
           </div>
-          {/* Code search */}
           <div className="relative">
             <Hash className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -195,7 +201,7 @@ export function LabQuoter({
         </p>
 
         <div className="mt-2 max-h-[520px] space-y-2 overflow-y-auto pr-1">
-          <ExamList items={mainResults} cart={cart} onAdd={add} />
+          <ExamList items={mainResults} cart={cart} onAdd={add} onChangeQty={changeQty} />
 
           {soloResults.length > 0 && (
             <>
@@ -205,7 +211,7 @@ export function LabQuoter({
                   Solo Particulares — Exámenes externos ({soloResults.length})
                 </p>
               </div>
-              <ExamList items={soloResults} cart={cart} onAdd={add} isSolo />
+              <ExamList items={soloResults} cart={cart} onAdd={add} onChangeQty={changeQty} isSolo />
             </>
           )}
 
@@ -221,9 +227,9 @@ export function LabQuoter({
   );
 }
 
-function ProfileCard({ p, cart, onAdd }: { p: LabProfile; cart: LabExam[]; onAdd: (p: LabProfile) => void }) {
+function ProfileCard({ p, cart, onAdd }: { p: LabProfile; cart: LabCartItem[]; onAdd: (p: LabProfile) => void }) {
   const cartKey = p.code ?? `PERFIL-${p.name}`;
-  const inCart = cart.some((c) => c.code === cartKey);
+  const inCart = cart.some((c) => c.exam.code === cartKey);
   const fg = p.textDark ? "text-gray-900" : "text-white";
   const fgSub = p.textDark ? "text-gray-800/70" : "text-white/80";
   const btnBg = p.textDark ? "bg-black/15 hover:bg-black/25" : "bg-white/25 hover:bg-white/40";
@@ -283,17 +289,20 @@ function ExamList({
   items,
   cart,
   onAdd,
+  onChangeQty,
   isSolo = false,
 }: {
   items: LabExam[];
-  cart: LabExam[];
+  cart: LabCartItem[];
   onAdd: (e: LabExam) => void;
+  onChangeQty: (code: string, delta: number) => void;
   isSolo?: boolean;
 }) {
   return (
     <>
       {items.map((e, idx) => {
-        const inCart = cart.some((c) => c.code === e.code);
+        const cartItem = cart.find((c) => c.exam.code === e.code);
+        const inCart = !!cartItem;
         const blocked = isBlocked(e);
         const isBoleta = !isSolo && e.obs?.toUpperCase().includes("BOLETA");
 
@@ -334,14 +343,33 @@ function ExamList({
                 )}
               </div>
             </div>
-            <button
-              onClick={() => onAdd(e)}
-              disabled={inCart || blocked}
-              className="shrink-0 rounded-lg bg-primary p-2 text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
-              title={blocked ? "No disponible en este laboratorio" : inCart ? "Ya en cotización" : "Agregar"}
-            >
-              <Plus className="h-4 w-4" />
-            </button>
+
+            {inCart && !blocked ? (
+              <div className="flex shrink-0 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-1.5 py-1">
+                <button
+                  onClick={() => onChangeQty(e.code, -1)}
+                  className="flex h-6 w-6 items-center justify-center rounded-md bg-background text-foreground hover:bg-muted"
+                >
+                  <Minus className="h-3 w-3" />
+                </button>
+                <span className="w-5 text-center text-sm font-bold text-primary">{cartItem.qty}</span>
+                <button
+                  onClick={() => onChangeQty(e.code, 1)}
+                  className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground hover:opacity-90"
+                >
+                  <Plus className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => onAdd(e)}
+                disabled={blocked}
+                className="shrink-0 rounded-lg bg-primary p-2 text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
+                title={blocked ? "No disponible en este laboratorio" : "Agregar"}
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            )}
           </div>
         );
       })}

@@ -196,7 +196,7 @@ function labPrepSection(doc: jsPDF, y: number): number {
 
 export function generateCombinedPDF(args: {
   imagingItems: ExamCartPDFItem[];
-  labItems: LabExam[];
+  labItems: Array<{ exam: LabExam; qty: number }>;
   patientName: string;
   patientRut: string;
   previsionLabel: string;
@@ -301,23 +301,26 @@ export function generateCombinedPDF(args: {
 
     autoTable(doc, {
       startY: y,
-      head: [["Código", "Nombre del examen", `Precio ${priceColLabel}`]],
-      body: args.labItems.map((e) => {
-        const price =
+      head: [["Código", "Nombre del examen", "Cant.", `Precio ${priceColLabel}`]],
+      body: args.labItems.map(({ exam: e, qty }) => {
+        const unitPrice =
           args.previsionKey === "fa" ? (e.fonasa_a ?? e.particular) :
           args.previsionKey === "fbcd" ? (e.fonasa_bcd ?? e.particular) :
           e.particular;
+        const totalPrice = unitPrice * qty;
         return [
           e.code,
           e.name.replace(/\*PARTICULAR\*/gi, "").replace(/\s{2,}/g, " ").trim(),
-          price > 0 ? formatCLP(price) : "Consultar",
+          String(qty),
+          totalPrice > 0 ? formatCLP(totalPrice) : "Consultar",
         ];
       }),
       theme: "striped",
       headStyles: { fillColor: BRAND, textColor: 255, fontStyle: "bold", fontSize: 10 },
       columnStyles: {
         0: { cellWidth: 28, fontStyle: "bold", textColor: BRAND_DARK, fontSize: 9 },
-        2: { halign: "right", cellWidth: 40, fontStyle: "bold" },
+        2: { halign: "center", cellWidth: 18 },
+        3: { halign: "right", cellWidth: 40, fontStyle: "bold" },
       },
       styles: { fontSize: 10, cellPadding: 4 },
     });
