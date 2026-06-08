@@ -15,7 +15,7 @@ function norm(s: string) {
 }
 
 function fmtCode(raw: string) {
-  return raw.replace(/^(\d{2})(\d{2})(\d{3})$/, "$1 $2 $3");
+  return raw;
 }
 
 function buildDataset(): FonasaEntry[] {
@@ -158,7 +158,7 @@ export function FonasaLookup({
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Código (03 01 026) o nombre del examen…"
+            placeholder="Código (0301026) o nombre del examen…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-sm shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
