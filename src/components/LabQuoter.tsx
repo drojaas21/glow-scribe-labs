@@ -2,6 +2,7 @@ import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
   Search, X, Plus, Minus, FlaskConical, Check,
   Layers, AlertCircle, ChevronDown, Hash, FileText,
+  Droplets, Clock, ShieldAlert, ChevronUp,
 } from "lucide-react";
 import { labDatabase, type LabExam } from "@/data/catalog";
 import { labProfiles, type LabProfile } from "@/data/profiles";
@@ -157,6 +158,9 @@ export function LabQuoter({
         </div>
       </div>
 
+      {/* Preparaciones */}
+      <PrepPanel />
+
       {/* Catalog */}
       <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
         <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">Catálogo de laboratorio</h3>
@@ -223,6 +227,111 @@ export function LabQuoter({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+const prepMeta: Record<string, { label: string; detail: string; color: string; icon: typeof Droplets }> = {
+  orina_manana: {
+    label: "Primera orina de la mañana",
+    detail: "Recolectar la primera orina de la mañana (segundo chorro). Llevar al laboratorio en menos de 2 horas.",
+    color: "blue",
+    icon: Droplets,
+  },
+  orina_24h: {
+    label: "Orina de 24 horas",
+    detail: "Recolectar toda la orina durante 24 horas consecutivas. Desechar la primera orina del día e iniciar la recolección a partir de la segunda.",
+    color: "violet",
+    icon: Clock,
+  },
+  psa: {
+    label: "Abstinencia sexual 48h",
+    detail: "El paciente debe mantener abstinencia sexual durante 48 horas antes del examen para no alterar el resultado.",
+    color: "rose",
+    icon: ShieldAlert,
+  },
+};
+
+function PrepBadge({ type }: { type: "orina_manana" | "orina_24h" | "psa" }) {
+  const m = prepMeta[type];
+  const Icon = m.icon;
+  const badgeColors: Record<string, string> = {
+    blue: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
+    violet: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400",
+    rose: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400",
+  };
+  return (
+    <span className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeColors[m.color]}`}>
+      <Icon className="h-2.5 w-2.5 shrink-0" />
+      {m.label}
+    </span>
+  );
+}
+
+function PrepPanel() {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="overflow-hidden rounded-2xl border border-teal-200 bg-teal-50/60 shadow-[var(--shadow-card)] dark:border-teal-800/50 dark:bg-teal-950/20">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex w-full items-center gap-3 px-5 py-3.5 text-left transition hover:bg-teal-100/50 dark:hover:bg-teal-900/20"
+      >
+        <FlaskConical className="h-4 w-4 shrink-0 text-teal-600 dark:text-teal-400" />
+        <span className="flex-1 text-sm font-bold text-teal-800 dark:text-teal-300">
+          Indicaciones de preparación para el paciente
+        </span>
+        {open
+          ? <ChevronUp className="h-4 w-4 shrink-0 text-teal-500" />
+          : <ChevronDown className="h-4 w-4 shrink-0 text-teal-500" />}
+      </button>
+
+      {open && (
+        <div className="border-t border-teal-200 px-5 pb-4 pt-3 dark:border-teal-800/50">
+          {/* General instructions */}
+          <div className="mb-3 rounded-xl border border-teal-200 bg-white px-4 py-3 dark:border-teal-800 dark:bg-teal-950/40">
+            <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-teal-700 dark:text-teal-400">
+              Indicaciones generales (exámenes de sangre)
+            </p>
+            <ul className="space-y-1 text-[12px] text-gray-700 dark:text-gray-300">
+              <li className="flex gap-2"><span className="text-teal-500 font-bold">•</span>Ayuno mínimo de <strong>8 horas</strong> y máximo de <strong>12 horas</strong> (no exceder para no alterar las muestras).</li>
+              <li className="flex gap-2"><span className="text-teal-500 font-bold">•</span>Se recomienda última colación a las <strong>23:00 hrs</strong> del día anterior.</li>
+              <li className="flex gap-2"><span className="text-teal-500 font-bold">•</span>Toma de muestras: <strong>Lunes a Viernes 08:00–10:30 hrs</strong> · <strong>Sábados 09:00–10:30 hrs</strong>.</li>
+              <li className="flex gap-2"><span className="text-teal-500 font-bold">•</span>Traer <strong>cédula de identidad</strong> y <strong>orden médica</strong>. Llegar 10 minutos antes de la hora.</li>
+            </ul>
+          </div>
+
+          {/* Special prep types */}
+          <div className="grid gap-2 sm:grid-cols-3">
+            {Object.entries(prepMeta).map(([key, m]) => {
+              const Icon = m.icon;
+              const colors: Record<string, string> = {
+                blue: "border-blue-200 bg-blue-50 dark:border-blue-800/50 dark:bg-blue-950/30",
+                violet: "border-violet-200 bg-violet-50 dark:border-violet-800/50 dark:bg-violet-950/30",
+                rose: "border-rose-200 bg-rose-50 dark:border-rose-800/50 dark:bg-rose-950/30",
+              };
+              const titleColors: Record<string, string> = {
+                blue: "text-blue-700 dark:text-blue-400",
+                violet: "text-violet-700 dark:text-violet-400",
+                rose: "text-rose-700 dark:text-rose-400",
+              };
+              const iconColors: Record<string, string> = {
+                blue: "text-blue-500",
+                violet: "text-violet-500",
+                rose: "text-rose-500",
+              };
+              return (
+                <div key={key} className={`rounded-xl border p-3 ${colors[m.color]}`}>
+                  <div className="mb-1.5 flex items-center gap-1.5">
+                    <Icon className={`h-3.5 w-3.5 shrink-0 ${iconColors[m.color]}`} />
+                    <span className={`text-[11px] font-bold ${titleColors[m.color]}`}>{m.label}</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-gray-600 dark:text-gray-400">{m.detail}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -342,6 +451,7 @@ function ExamList({
                   </span>
                 )}
               </div>
+              {e.prep && <PrepBadge type={e.prep} />}
             </div>
 
             {inCart && !blocked ? (

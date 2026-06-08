@@ -31,6 +31,7 @@ export type LabExam = {
   fonasa_a: number | null;
   particular: number;
   obs: string;
+  prep?: "orina_manana" | "orina_24h" | "psa";
 };
 
 export const examDatabase = examsJson as Record<ExamCategory, Exam[]>;
