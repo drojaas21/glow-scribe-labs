@@ -1,7 +1,7 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
   Brain, ScanLine, Waves, Bone, HeartPulse, Droplets, Activity,
-  Search, X, Stethoscope, Plus, Minus, ChevronDown, MapPin, Info,
+  Search, X, Stethoscope, Plus, Minus, ChevronDown, MapPin, Info, FlaskConical, AlertCircle,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -237,6 +237,23 @@ export function ExamQuoter({
                     {formatCLP(price)}
                     {hasOverride && <span className="ml-1 text-[9px] font-medium opacity-70">editado</span>}
                   </span>
+                  {/* Badges row */}
+                  {(exam.autoContrast || exam.note) && (
+                    <span className="mt-1.5 flex flex-wrap gap-1">
+                      {exam.autoContrast && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold text-orange-700 dark:bg-orange-900/40 dark:text-orange-400">
+                          <FlaskConical className="h-2.5 w-2.5" />
+                          Requiere contraste
+                        </span>
+                      )}
+                      {exam.note && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                          <AlertCircle className="h-2.5 w-2.5 shrink-0" />
+                          {exam.note}
+                        </span>
+                      )}
+                    </span>
+                  )}
                 </span>
 
                 {/* Actions: info icon + add/qty */}

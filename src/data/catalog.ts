@@ -9,6 +9,8 @@ export type Exam = {
   fa: number;
   fbcd: number;
   particular?: boolean;
+  autoContrast?: boolean;
+  note?: string;
 };
 
 export type ExamCategory =
