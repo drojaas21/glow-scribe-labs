@@ -136,9 +136,10 @@ export function generateCombinedPDF(args: GenerateCombinedPDFArgs) {
     ry += 5;
   }
 
-  // Separator line in brand blue
-  hline(doc, 37, BRAND, 0.5);
-  let y = 42;
+  // Separator line — drawn after last info row, not at a fixed y
+  const lineY = ry + 2;
+  hline(doc, lineY, BRAND, 0.5);
+  let y = lineY + 5;
 
   // ── Imagenología table ───────────────────────────────────────────────────────
   if (args.imagingItems.length > 0) {
@@ -147,8 +148,8 @@ export function generateCombinedPDF(args: GenerateCombinedPDFArgs) {
     const hasDiscount = args.imagingItems.some((it) => it.discountPct > 0);
 
     const head = hasDiscount
-      ? [["Categoría", "Examen", "Cant.", "Precio", "Desc.", "Total"]]
-      : [["Categoría", "Examen", "Cant.", "Precio unitario", "Total"]];
+      ? [["Cat.", "Examen", "Cant.", "Precio", "Desc.", "Total"]]
+      : [["Cat.", "Examen", "Cant.", "Precio unitario", "Total"]];
 
     const body = args.imagingItems.map((it) => {
       const catLabel = categoryMeta[it.category]?.short ?? it.category.toUpperCase();
