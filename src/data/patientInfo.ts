@@ -136,6 +136,84 @@ export const patientInfoMap: Record<string, string> = {
   "Elastografía Hepática":
     "Mide la rigidez del hígado mediante ultrasonido para evaluar el grado de fibrosis hepática (daño por hepatitis, alcohol u otras causas), sin necesidad de biopsia. Requiere ayuno de 2-3 horas. Dura 10-15 minutos.",
 
+  // ── RADIOGRAFÍA ───────────────────────────────────────────────────────────
+  "Radiografía de Partes Blandas / Laringe / Cavum / Rinofaringe":
+    "Radiografía de los tejidos blandos del cuello o la cara para evaluar laringe, cavum y rinofaringe. Usa una dosis muy baja de rayos X. El paciente debe retirar collares, aros y cualquier objeto metálico de la zona del cuello y cara antes del examen. No requiere preparación especial. Dura 5-10 minutos.",
+  "Radiografía de Tórax Proyección Complementaria":
+    "Proyección adicional del tórax para complementar un estudio previo. Se realiza en posición indicada por el médico radiólogo (lateral, oblicua, lordótica u otra). Retirar collares, aros y brassier con aros metálicos. Dura 5 minutos.",
+  "Radiografía de Tórax Simple (frontal o lateral)":
+    "Una de las radiografías más frecuentes. Evalúa pulmones, corazón, costillas y columna dorsal. Se realiza de pie o sentado, manteniendo una inspiración profunda durante unos segundos mientras se toma la imagen. Retirar collares y ropa con metal en la zona del tórax. No requiere preparación. Dura 5-10 minutos.",
+  "Radiografía de Tórax Frontal y Lateral":
+    "Estudio completo del tórax en dos proyecciones (frente y perfil). Evalúa pulmones, corazón, aorta, costillas y columna torácica. El paciente debe mantenerse quieto e inspirar profundo durante la toma. Retirar collares, aros y brassier con aros metálicos. Dura 5-10 minutos.",
+  "Radiografía de Abdomen Simple":
+    "Radiografía del abdomen para evaluar el intestino, nivel de gases, posibles cálculos urinarios o masas abdominales. El paciente debe descubrir el abdomen y retirar cinturones o ropa con metal en la zona. No requiere preparación especial. Dura 5-10 minutos.",
+  "Radiografía de Abdomen Proyección Complementaria":
+    "Proyección adicional del abdomen (decúbito lateral, bipedestación u otra) para complementar el estudio inicial. Útil para detectar niveles hidroaéreos en obstrucción intestinal o aire libre abdominal. No requiere preparación. Dura 5 minutos.",
+  "Radiografía Renal Simple":
+    "Radiografía que abarca los riñones, uréteres y vejiga (conocida también como RUS). Permite visualizar cálculos renales o ureterales. El paciente debe retirar cinturón y ropa con metal en la zona abdominal. No requiere preparación especial. Dura 5-10 minutos.",
+  "Radiografía Vesical Simple o Perivesical":
+    "Radiografía enfocada en la vejiga urinaria y sus estructuras adyacentes. Se indica para evaluar cálculos vesicales, cuerpos extraños o masa pélvica. No requiere preparación especial, aunque puede solicitarse vejiga llena o vacía según indicación médica. Dura 5-10 minutos.",
+  "Radiografía CPN / Órbitas / ATM / Huesos Nasales / Malar / Maxilar / Cara":
+    "Radiografía de los huesos de la cara: cavidades paranasales (CPN), órbitas, articulación temporomandibular (ATM), huesos nasales, malar o maxilar. Indicada para sinusitis crónica, fractura facial o patología de la ATM. Retirar aros, lentes y cualquier accesorio metálico de la cabeza. Dura 5-10 minutos.",
+  "Radiografía de Cráneo Frontal y Lateral":
+    "Radiografía del cráneo en dos proyecciones para evaluar la bóveda craneana, los huesos del cráneo y la silla turca. Indicada en traumatismos craneanos o estudio de patología ósea craneal. Retirar aros, horquillas, diademas y cualquier accesorio metálico de la cabeza. Dura 5-10 minutos.",
+  "Radiografía de Cráneo Proyección Especial (Base/Towne)":
+    "Proyecciones especiales del cráneo (base o proyección de Towne) que muestran áreas no visibles en las vistas estándar. Permite evaluar la base del cráneo, los cóndilos occipitales o la fosa posterior. Retirar todos los objetos metálicos de la cabeza. Dura 5-10 minutos.",
+  "Radiografía de Oído (unilateral o bilateral)":
+    "Radiografía especial de los huesos temporales y el conducto auditivo. Indicada para evaluar procesos mastoideos, otitis crónica o cuerpos extraños en el oído. Se realizan proyecciones especiales (Schüller, Stenvers u otras). Retirar aros y objetos metálicos cercanos a los oídos. Dura 5-10 minutos.",
+  "Radiografía Silla Turca Frontal y Lateral":
+    "Radiografía enfocada en la silla turca, estructura ósea del cráneo que aloja la hipófisis. Indicada para sospecha de tumores hipofisiarios o alteraciones hormonales cuando otras técnicas no están disponibles. Retirar objetos metálicos de la cabeza. Dura 5-10 minutos.",
+  "Radiografía Columna Cervical o Atlas-Axis (frontal y lateral)":
+    "Radiografía de las vértebras del cuello (C1-C7) en proyecciones básicas. Indicada para cervicalgia, traumatismo cervical o evaluación de la articulación entre las dos primeras vértebras (atlas y axis). Retirar collares, aros y cualquier objeto metálico del cuello. No requiere preparación especial. Dura 5-10 minutos.",
+  "Radiografía Columna Cervical (frontal, lateral y oblicuas)":
+    "Estudio completo de la columna cervical en cuatro proyecciones. Las oblicuas permiten ver los forámenes neurales y detectar compresión radicular. Retirar collares, aros, horquillas y objetos metálicos del cuello y la cabeza. Dura 10-15 minutos.",
+  "Radiografía Columna Cervical Flexión y Extensión (dinámicas)":
+    "Radiografías de la columna cervical en posición de flexión máxima y extensión máxima del cuello. Evalúa la estabilidad ligamentosa y la movilidad cervical. El médico radiólogo o el tecnólogo supervisa el grado de movimiento para evitar riesgos. Retirar collares y objetos metálicos del cuello. Dura 10-15 minutos.",
+  "Radiografía Columna Dorsal / Dorsolumbar / Parrilla Costal":
+    "Radiografía de la columna torácica y/o la unión dorsolumbar, incluyendo las costillas cuando se solicita la parrilla costal. Indicada para dolor dorsal, cifosis, fractura vertebral o lesión costal. Retirar ropa con cierres metálicos y cinturones en la zona. Dura 5-10 minutos.",
+  "Radiografía Columna Lumbar o Lumbosacra (frontal, lateral, focalizada)":
+    "Estudio de las vértebras lumbares (L1-L5) y la unión lumbosacra. Incluye proyecciones frontal, lateral y una focalizada en L5-S1. Indicada para lumbago, espondiloartrosis o sospecha de listesis vertebral. Retirar cinturón y objetos metálicos de la zona lumbar. No requiere preparación. Dura 10-15 minutos.",
+  "Radiografía Columna Lumbar Flexión y Extensión (dinámicas)":
+    "Radiografías funcionales de la columna lumbar en posición de flexión máxima hacia adelante y extensión hacia atrás. Permite detectar inestabilidad segmentaria o espondilolistesis dinámica. El tecnólogo supervisa el grado de movimiento. Retirar cinturón y objetos metálicos. Dura 10-15 minutos.",
+  "Radiografía Columna Lumbar Oblicuas Adicionales":
+    "Proyecciones oblicuas de la columna lumbar que complementan el estudio estándar, útiles para evaluar los istmos vertebrales y detectar espondilólisis (fractura del istmo). Retirar cinturón y objetos metálicos de la zona lumbar. Dura 5-10 minutos.",
+  "Radiografía Columna Total AP/LAT Panorámica con Folio Graduado":
+    "Radiografía de toda la columna vertebral de pie en proyección frontal (AP) y lateral, en un folio largo y graduado. Es el estudio estándar para evaluar y medir escoliosis y cifosis. El paciente debe estar de pie sin zapatos, en posición natural. Se cobra como dos proyecciones. Dura 10-15 minutos.",
+  "Radiografía de Cadera / Coxofemoral / Pelvis":
+    "Radiografía de la articulación de la cadera, el fémur proximal o toda la pelvis. Indicada para coxartrosis, fractura de cadera, displasia o dolor inguinal. Solo incluye una proyección por examen. Retirar cinturón, monedas y objetos metálicos de la zona. Dura 5-10 minutos.",
+  "Radiografía Pelvis/Cadera de Recién Nacido o Niño < 6 años":
+    "Radiografía de la pelvis y caderas en recién nacidos y niños menores de 6 años para detectar displasia del desarrollo de la cadera (DDC). Se realiza en posición supina con las piernas en posición estándar. Incluye solo una proyección. Dura 5 minutos.",
+  "Radiografía Pelvis/Cadera Proyecciones Especiales":
+    "Proyecciones adicionales de la pelvis o cadera (Dunn, false profile, Lauenstein u otras) para evaluar en detalle la articulación coxofemoral, detectar pinzamiento femoroacetabular o inestabilidad. Retirar cinturón y objetos metálicos de la zona. Dura 5-10 minutos.",
+  "Radiografía Articulaciones Sacroilíacas / Sacrocoxis":
+    "Radiografía del sacro, cóccix y las articulaciones sacroilíacas (unión entre la pelvis y la columna). Indicada para sacrocoxigodinia (dolor del cóccix), espondilitis anquilosante o lumbalgia baja. Retirar cinturón y objetos metálicos de la zona. Dura 5-10 minutos.",
+  "Radiografía de Extremidades (brazo, antebrazo, codo, muñeca, mano, dedos, pie)":
+    "Radiografía de cualquier segmento de una extremidad. Siempre incluye proyecciones AP (frente) y lateral (perfil). Indicada para fractura, luxación, lesión articular o cuerpo extraño. El paciente debe retirar pulseras, anillos y objetos metálicos del segmento a radiografiar. Dura 5-10 minutos.",
+  "Radiografía de Clavícula":
+    "Radiografía de la clavícula en proyección frontal y, si es necesario, proyecciones adicionales. Indicada para fractura de clavícula, luxación acromioclavicular o patología ósea. Retirar collares y objetos metálicos del hombro y cuello. Dura 5-10 minutos.",
+  "Radiografía Edad Ósea: Carpo y Mano":
+    "Radiografía de la mano y muñeca izquierda para determinar la edad ósea del paciente, comparando los núcleos de osificación con atlas de referencia. Indicada en niños con talla baja, pubertad precoz o tardía. No requiere preparación especial. Dura 5-10 minutos.",
+  "Radiografía Edad Ósea: Rodilla Frontal":
+    "Radiografía de la rodilla izquierda (frontal) para evaluar los núcleos de osificación en recién nacidos o lactantes. Complementa el estudio de edad ósea en los primeros años de vida. No requiere preparación especial. Dura 5 minutos.",
+  "Radiografía Estudio de Escafoides":
+    "Serie de radiografías en cuatro o más proyecciones especiales para el diagnóstico de fractura del hueso escafoides (hueso del carpo difícil de visualizar). Indicada tras caída sobre la mano extendida con dolor en la tabaquera anatómica. Retirar pulseras y anillos. Dura 10-15 minutos.",
+  "Radiografía Muñeca Derecha AP-LAT-OBL":
+    "Estudio completo de la muñeca derecha en tres proyecciones: frontal (AP), lateral y oblicua. Evalúa los huesos del carpo, radio y cúbito distales. Indicada para fractura, artropatía o dolor crónico de muñeca. Retirar pulseras y anillos de la muñeca derecha. Dura 5-10 minutos.",
+  "Radiografía Muñeca Izquierda AP-LAT-OBL":
+    "Estudio completo de la muñeca izquierda en tres proyecciones: frontal (AP), lateral y oblicua. Evalúa los huesos del carpo, radio y cúbito distales. Indicada para fractura, artropatía o dolor crónico de muñeca. Retirar pulseras y anillos de la muñeca izquierda. Dura 5-10 minutos.",
+  "Radiografía Tobillo Derecho AP-LAT-OBL":
+    "Estudio completo del tobillo derecho en tres proyecciones: frontal (AP), lateral y oblicua (mortaja). Evalúa los maléolos, la mortaja tibioastragalina y los huesos del retropié. Indicada para esguince grave, fractura o artropatía. Retirar calzado y calcetines antes del examen. Dura 5-10 minutos.",
+  "Radiografía Tobillo Izquierdo AP-LAT-OBL":
+    "Estudio completo del tobillo izquierdo en tres proyecciones: frontal (AP), lateral y oblicua (mortaja). Evalúa los maléolos, la mortaja tibioastragalina y los huesos del retropié. Indicada para esguince grave, fractura o artropatía. Retirar calzado y calcetines antes del examen. Dura 5-10 minutos.",
+  "Radiografía Hombro / Fémur / Rodilla / Pierna / Costilla / Esternón / Escápula":
+    "Radiografía de un segmento óseo específico (hombro, fémur, rodilla, pierna, costilla, esternón o escápula). Incluye las proyecciones estándar para cada segmento. Indicada para fractura, patología ósea o evaluación postquirúrgica. Retirar objetos metálicos del segmento a estudiar. Dura 5-10 minutos.",
+  "Teleradiografía de Extremidades Inferiores":
+    "Radiografía panorámica de ambas extremidades inferiores de pie, de cadera a tobillo, en un folio largo y graduado. Se usa para medir discrepancias de longitud entre las piernas y para planificación quirúrgica ortopédica. El paciente debe estar de pie sin calzado. Se cobra como dos proyecciones (una por extremidad). Dura 10-15 minutos.",
+  "Radiografía Proyecciones Especiales (oblicuas, rótulas, sesamoideos, Rosemberg)":
+    "Proyecciones radiológicas especiales: oblicuas de distintos segmentos, rótulas axiales (para evaluar la articulación femororrotuliana), sesamoideos del pie, o proyección de Rosemberg (rodilla en 45° de flexión para evaluar el espacio articular). Indicadas cuando las proyecciones estándar no son suficientes. Dura 5-10 minutos.",
+  "Radiografía Túnel Intercondíleo o Radio-Carpiano":
+    "Proyecciones específicas: el túnel intercondíleo (vista de notch en rodilla flexionada) evalúa los cóndilos femorales y la espina tibial; la proyección radiocarpiana estudia la articulación de la muñeca en estrés o en posición funcional. Indicadas para patología del pivote central de la rodilla o inestabilidad de muñeca. Dura 5-10 minutos.",
+
   // ── MAMOGRAFÍA ────────────────────────────────────────────────────────────
   "Mamografía Bilateral":
     "Radiografía de ambas mamas para detectar cáncer mamario en etapas tempranas. Indicada para tamizaje en mujeres desde los 40-45 años o antes si hay factores de riesgo. El estudio requiere comprimir la mama por breves instantes para obtener imágenes más claras. Dura 15-20 minutos.",
