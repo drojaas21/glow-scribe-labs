@@ -2,7 +2,7 @@ import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
   Search, X, Plus, Minus, FlaskConical, Check,
   Layers, AlertCircle, ChevronDown, Hash, FileText,
-  Droplets, Clock, ShieldAlert, ChevronUp,
+  Droplets, Clock, ShieldAlert, ChevronUp, Timer,
 } from "lucide-react";
 import { labDatabase, type LabExam } from "@/data/catalog";
 import { labProfiles, type LabProfile } from "@/data/profiles";
@@ -161,6 +161,9 @@ export function LabQuoter({
       {/* Preparaciones */}
       <PrepPanel />
 
+      {/* Tiempos de entrega */}
+      <TurnaroundPanel />
+
       {/* Catalog */}
       <div className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-card)]">
         <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-foreground">Catálogo de laboratorio</h3>
@@ -251,6 +254,111 @@ const prepMeta: Record<string, { label: string; detail: string; color: string; i
     icon: ShieldAlert,
   },
 };
+
+const turnaroundData = [
+  {
+    label: "Mismo día",
+    sublabel: "2–8 h",
+    color: "emerald",
+    exams: "Hemograma, VHS, glicemia, creatinina, urea, ácido úrico, perfil renal, perfil hepático, perfil bioquímico, perfil lipídico, colesterol, triglicéridos, bilirrubinas, GGT, fosfatasas alcalinas, calcio, fósforo, magnesio, electrolitos, TP/INR, TTPA, grupo sanguíneo",
+  },
+  {
+    label: "24 horas",
+    sublabel: null,
+    color: "blue",
+    exams: "Ferritina, fierro sérico, TIBC, transferrina, HbA1c, vitamina B12, insulina basal, β-HCG, TSH, T4 libre, T3, cortisol, FSH, LH, estradiol, progesterona, prolactina, testosterona",
+  },
+  {
+    label: "2–5 días hábiles",
+    sublabel: null,
+    color: "amber",
+    exams: "Vitamina D, PTH, SHBG, testosterona libre, DHEA-S, ACTH, aldosterona, IGF-1, IGFBP3, ANA, ENA, ATPO, antitiroglobulina, electroforesis de proteínas, homocisteína, CEA, AFP",
+  },
+  {
+    label: "5–15 días hábiles",
+    sublabel: null,
+    color: "rose",
+    exams: "Antitrombina III, Proteína C, Proteína S, Factor Von Willebrand, Eritropoyetina, Interferón Gamma TBC, Carga Viral VIH, Calprotectina, Galactomanano, Cobre, Arsénico, Cortisol salival y otros exámenes externos",
+  },
+] as const;
+
+type TurnaroundColor = (typeof turnaroundData)[number]["color"];
+
+const turnaroundColorMap: Record<TurnaroundColor, { card: string; badge: string; label: string; dot: string }> = {
+  emerald: {
+    card: "border-emerald-200 bg-emerald-50/60 dark:border-emerald-800/50 dark:bg-emerald-950/20",
+    badge: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
+    label: "text-emerald-800 dark:text-emerald-300",
+    dot: "bg-emerald-400",
+  },
+  blue: {
+    card: "border-blue-200 bg-blue-50/60 dark:border-blue-800/50 dark:bg-blue-950/20",
+    badge: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
+    label: "text-blue-800 dark:text-blue-300",
+    dot: "bg-blue-400",
+  },
+  amber: {
+    card: "border-amber-200 bg-amber-50/60 dark:border-amber-800/50 dark:bg-amber-950/20",
+    badge: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+    label: "text-amber-800 dark:text-amber-300",
+    dot: "bg-amber-400",
+  },
+  rose: {
+    card: "border-rose-200 bg-rose-50/60 dark:border-rose-800/50 dark:bg-rose-950/20",
+    badge: "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300",
+    label: "text-rose-800 dark:text-rose-300",
+    dot: "bg-rose-400",
+  },
+};
+
+function TurnaroundPanel() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="overflow-hidden rounded-2xl border border-indigo-200 bg-indigo-50/60 shadow-[var(--shadow-card)] dark:border-indigo-800/50 dark:bg-indigo-950/20">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex w-full items-center gap-3 px-5 py-3.5 text-left transition hover:bg-indigo-100/50 dark:hover:bg-indigo-900/20"
+      >
+        <Timer className="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
+        <span className="flex-1 text-sm font-bold text-indigo-800 dark:text-indigo-300">
+          Tiempos de entrega aproximados
+        </span>
+        {open
+          ? <ChevronUp className="h-4 w-4 shrink-0 text-indigo-500" />
+          : <ChevronDown className="h-4 w-4 shrink-0 text-indigo-500" />}
+      </button>
+
+      {open && (
+        <div className="border-t border-indigo-200 px-5 pb-4 pt-3 dark:border-indigo-800/50">
+          <div className="grid gap-2 sm:grid-cols-2">
+            {turnaroundData.map((t) => {
+              const c = turnaroundColorMap[t.color];
+              return (
+                <div key={t.label} className={`rounded-xl border p-3 ${c.card}`}>
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${c.dot}`} />
+                    <span className={`text-[12px] font-bold ${c.label}`}>
+                      {t.label}
+                      {t.sublabel && (
+                        <span className="ml-1 font-normal opacity-70">({t.sublabel})</span>
+                      )}
+                    </span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-gray-600 dark:text-gray-400">
+                    {t.exams}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            * Los tiempos son aproximados y pueden variar. Exámenes externos pueden demorar más.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function PrepBadge({ type }: { type: "orina_manana" | "orina_24h" | "psa" }) {
   const m = prepMeta[type];
