@@ -105,3 +105,82 @@ export function needsCreatinineAlert(category: ExamCategory): boolean {
 export function needsRMSafetyAlert(category: ExamCategory): boolean {
   return category === "resonancia";
 }
+
+export function getImagingPrepNote(examName: string, category: ExamCategory): string | null {
+  const n = norm(examName);
+
+  if (category === "radiografia") {
+    return "Retirar objetos metálicos de la zona a examinar (aros, collares, cinturones, monedas, etc.).";
+  }
+
+  if (category === "resonancia") {
+    const parts: string[] = [];
+    if (n.includes("colangior")) {
+      parts.push("Ayuno de 6 horas (sólidos y líquidos).");
+    } else if (n.includes("abdom") || n.includes("pelv") || n.includes("prostat")) {
+      parts.push("Ayuno mínimo 4 horas (sólidos y líquidos).");
+    }
+    if (n.includes("corazon") || n.includes("cardiaca") || n.includes("cardiac")) {
+      parts.push("Evitar cafeína (café, té, bebidas cola) las 24 horas previas.");
+    }
+    parts.push("Completar encuesta de seguridad RM al llegar (informar marcapasos, prótesis metálicas, stents, DIU u otros implantes).");
+    return parts.join(" ");
+  }
+
+  if (category === "tac") {
+    const parts: string[] = ["Requiere contraste yodado endovenoso. Ayuno mínimo 6 horas (sólidos y líquidos)."];
+    if (n.includes("abdom") || n.includes("pelv")) {
+      parts.push("Beber 1.5 L de agua paulatinamente desde 1 hora antes; retener orina hasta el examen.");
+    }
+    return parts.join(" ");
+  }
+
+  if (category === "contraste") {
+    return "Requiere medio de contraste yodado. Ayuno mínimo 6 horas (sólidos y líquidos).";
+  }
+
+  if (category === "ecografia") {
+    if (n.includes("mama") || n.includes("mamaria")) {
+      return "Sin desodorante, cremas ni talco en zona mamaria o axilas. Pacientes mayores de 40 años: traer mamografía reciente (máximo 6 meses).";
+    }
+    if (n.includes("abdom") && (n.includes("pelv") || n.includes("pelvian"))) {
+      return "Ayuno 6–8 horas. Vejiga llena: beber 1.5 L de agua 1 hora antes, no orinar hasta el examen.";
+    }
+    if (n.includes("abdom")) {
+      return "Ayuno 6–8 horas (sólidos y líquidos).";
+    }
+    if ((n.includes("renal") || n.includes("rinon")) && (n.includes("vesical") || n.includes("vejiga"))) {
+      return "Ayuno 4 horas. Vejiga llena: beber 1.5 L de agua 1 hora antes, no orinar.";
+    }
+    if (n.includes("renal") || n.includes("rinon")) {
+      return "Ayuno mínimo 4 horas (sólidos y líquidos).";
+    }
+    if (n.includes("pelv")) {
+      return "Vejiga llena: beber 1.5 L de agua paulatinamente 1 hora antes, no orinar.";
+    }
+    if (n.includes("elastograf")) {
+      return "Ayuno mínimo 2–3 horas (sólidos y líquidos).";
+    }
+    return null;
+  }
+
+  if (category === "mamografia") {
+    return "Sin desodorante, cremas ni talco en zona mamaria o axilas. Traer estudios anteriores si los tiene.";
+  }
+
+  if (category === "cardiologia") {
+    if (n.includes("holter") && (n.includes("ritmo") || n.includes("ecg") || n.includes("24"))) {
+      return "Ducharse la noche anterior (no podrá durante las 24 h del monitoreo). Usar ropa cómoda, sin cremalleras metálicas.";
+    }
+    if (n.includes("holter") || n.includes("mapa") || n.includes("presion")) {
+      return "Ropa cómoda con manga holgada en el brazo no dominante. Actividad normal durante el registro.";
+    }
+    return null;
+  }
+
+  return null;
+}
+
+export function hasContrastPostProtocol(category: ExamCategory): boolean {
+  return category === "tac" || category === "contraste";
+}
