@@ -3,35 +3,17 @@ import autoTable from "jspdf-autotable";
 import { formatCLP } from "./format";
 import { getImagingPrepNote, hasContrastPostProtocol } from "@/data/imagingPrep";
 import type { Exam, ExamCategory, Convenio, LabExam } from "@/data/catalog";
-import { convenioMeta } from "@/data/catalog";
+import { categoryMeta, convenioMeta } from "@/data/catalog";
 
-const BRAND: [number, number, number] = [25, 96, 165];
-const BRAND_DARK: [number, number, number] = [20, 54, 93];
-const GRAY_LIGHT: [number, number, number] = [245, 246, 248];
-const GRAY_MID: [number, number, number] = [200, 205, 215];
-const GRAY_TEXT: [number, number, number] = [80, 80, 80];
-const BLACK: [number, number, number] = [20, 20, 20];
+// ── Palette ────────────────────────────────────────────────────────────────────
+const BRAND:      [number,number,number] = [25,  96,  165];
+const BRAND_DARK: [number,number,number] = [20,  54,   93];
+const GRAY_LIGHT: [number,number,number] = [245,246,  248];
+const GRAY_MID:   [number,number,number] = [200,205,  215];
+const GRAY_TEXT:  [number,number,number] = [90,  90,   90];
+const BLACK:      [number,number,number] = [20,  20,   20];
 
-// ── Page helper ────────────────────────────────────────────────────────────────
-
-function checkPage(doc: jsPDF, y: number, needed: number): number {
-  if (y + needed > 274) {
-    doc.addPage();
-    return 18;
-  }
-  return y;
-}
-
-// ── Divider line ───────────────────────────────────────────────────────────────
-
-function hline(doc: jsPDF, y: number, x1 = 15, x2 = 195, r = 150, g = 155, b = 165) {
-  doc.setDrawColor(r, g, b);
-  doc.setLineWidth(0.3);
-  doc.line(x1, y, x2, y);
-}
-
-// ── PDF Types ──────────────────────────────────────────────────────────────────
-
+// ── PDF types ──────────────────────────────────────────────────────────────────
 export type ExamCartPDFItem = {
   exam: Exam;
   category: ExamCategory;
@@ -58,145 +40,179 @@ export type GenerateCombinedPDFArgs = {
   observations: string;
 };
 
-// ── Main PDF ───────────────────────────────────────────────────────────────────
+// ── Utilities ──────────────────────────────────────────────────────────────────
+
+function hline(doc: jsPDF, y: number, color: [number,number,number] = GRAY_MID, lw = 0.3) {
+  doc.setDrawColor(...color);
+  doc.setLineWidth(lw);
+  doc.line(15, y, 195, y);
+}
+
+/** Returns new y, adds a page if needed with a minimal continuation header. */
+function checkPage(doc: jsPDF, y: number, needed: number, title = ""): number {
+  if (y + needed > 274) {
+    doc.addPage();
+    if (title) {
+      doc.setFillColor(...BRAND_DARK);
+      doc.rect(0, 0, 210, 11, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text(`DiagnoPRO Temuco · ${title}`, 15, 7.5);
+      return 17;
+    }
+    return 14;
+  }
+  return y;
+}
+
+function sectionLabel(doc: jsPDF, y: number, text: string): number {
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...BRAND_DARK);
+  doc.text(text, 15, y);
+  return y + 4;
+}
+
+function subtotalBar(doc: jsPDF, y: number, label: string, amount: number): number {
+  // Draw on top of the table bottom border intentionally — same line color so it seals cleanly
+  doc.setFillColor(...GRAY_LIGHT);
+  doc.setDrawColor(...GRAY_MID);
+  doc.setLineWidth(0.3);
+  doc.rect(15, y, 180, 9, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...BRAND_DARK);
+  doc.text(label, 20, y + 6.3);
+  doc.text(formatCLP(amount), 192, y + 6.3, { align: "right" });
+  return y + 13;
+}
+
+// ── Main cotización PDF ────────────────────────────────────────────────────────
 
 export function generateCombinedPDF(args: GenerateCombinedPDFArgs) {
   const doc = new jsPDF();
-  const now = new Date();
-  const dateStr = now.toLocaleDateString("es-CL");
+  const dateStr = new Date().toLocaleDateString("es-CL");
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  // Left: company
+  // ── Header ──────────────────────────────────────────────────────────────────
+  // Left column — company identity
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
+  doc.setFontSize(15);
   doc.setTextColor(...BRAND_DARK);
-  doc.text("DiagnoPRO Temuco", 15, 20);
+  doc.text("DiagnoPRO Temuco", 15, 18);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(...GRAY_TEXT);
-  doc.text("Las Heras 453 esq. Av. Caupolican · Temuco", 15, 27);
-  doc.text("(045) 2887405 · 2887400 · contacto@diagnopro.cl", 15, 33);
-
-  // Right: quote info
-  const labelX = 132;
-  const valueX = 165;
-  const rows: [string, string][] = [
-    ["COTIZACIÓN", dateStr],
-    ["FECHA:", dateStr],
-    ["PACIENTE:", args.patientName || "No especificado"],
-    ["RUT:", args.patientRut || "—"],
-    ["PREVISIÓN:", args.previsionLabel],
-  ];
-  if (args.convenioLabel !== "Particular / Sin Convenio") {
-    rows.push(["CONVENIO:", args.convenioLabel]);
-  }
-
-  let ry = 16;
-  // "COTIZACIÓN" big label
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.setTextColor(...BRAND);
-  doc.text("COTIZACIÓN", 195, ry, { align: "right" });
-  ry += 7;
-
-  doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
   doc.setTextColor(...GRAY_TEXT);
-  for (const [label, value] of rows.slice(1)) {
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...GRAY_TEXT);
-    doc.text(label, labelX, ry);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...BLACK);
-    doc.text(value, 195, ry, { align: "right" });
-    ry += 5.5;
+  doc.text("Las Heras 453 esq. Av. Caupolican, Temuco", 15, 25);
+  doc.text("(045) 2887405 · 2887400 · contacto@diagnopro.cl", 15, 30.5);
+
+  // Right column — quote meta (right-aligned pairs)
+  const infoRows: [string, string][] = [
+    ["Fecha:",     dateStr],
+    ["Paciente:",  args.patientName  || "No especificado"],
+    ["RUT:",       args.patientRut   || "—"],
+    ["Previsión:", args.previsionLabel],
+  ];
+  if (args.convenioLabel !== "Particular / Sin Convenio") {
+    infoRows.push(["Convenio:", args.convenioLabel]);
   }
 
-  hline(doc, 39, 15, 195, ...BRAND);
-  let y = 44;
+  // "COTIZACIÓN" heading top-right
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(...BRAND);
+  doc.text("COTIZACIÓN", 195, 18, { align: "right" });
 
-  // ── Imaging table ──────────────────────────────────────────────────────────
-  if (args.imagingItems.length > 0) {
+  let ry = 24.5;
+  for (const [lbl, val] of infoRows) {
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    doc.setTextColor(...BRAND_DARK);
-    doc.text("EXÁMENES DE IMAGENOLOGÍA", 15, y);
-    y += 4;
+    doc.setFontSize(7.5);
+    doc.setTextColor(...GRAY_TEXT);
+    doc.text(lbl, 155, ry);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...BLACK);
+    doc.text(val, 195, ry, { align: "right" });
+    ry += 5;
+  }
 
-    const body = args.imagingItems.map((item) => [
-      item.exam.name,
-      String(item.qty),
-      formatCLP(item.baseUnit),
-      item.discountPct > 0 ? `−${item.discountPct}%` : "",
-      formatCLP(item.lineTotal),
-    ]);
+  // Separator line in brand blue
+  hline(doc, 37, BRAND, 0.5);
+  let y = 42;
+
+  // ── Imagenología table ───────────────────────────────────────────────────────
+  if (args.imagingItems.length > 0) {
+    y = sectionLabel(doc, y, "EXÁMENES DE IMAGENOLOGÍA");
+
+    const hasDiscount = args.imagingItems.some((it) => it.discountPct > 0);
+
+    const head = hasDiscount
+      ? [["Categoría", "Examen", "Cant.", "Precio", "Desc.", "Total"]]
+      : [["Categoría", "Examen", "Cant.", "Precio unitario", "Total"]];
+
+    const body = args.imagingItems.map((it) => {
+      const catLabel = categoryMeta[it.category]?.short ?? it.category.toUpperCase();
+      const baseRow: string[] = [
+        catLabel,
+        it.exam.name,
+        String(it.qty),
+        formatCLP(it.baseUnit),
+      ];
+      if (hasDiscount) baseRow.push(it.discountPct > 0 ? `−${it.discountPct}%` : "");
+      baseRow.push(formatCLP(it.lineTotal));
+      return baseRow;
+    });
 
     autoTable(doc, {
       startY: y,
-      head: [["Examen", "Cant.", "Precio unitario", "Descuento", "Total"]],
+      head,
       body,
-      foot: args.imagingDiscount > 0
-        ? [["", "", "", "Ahorro convenio:", `−${formatCLP(args.imagingDiscount)}`]]
-        : undefined,
       theme: "grid",
-      headStyles: {
-        fillColor: BRAND,
-        textColor: [255, 255, 255],
-        fontStyle: "bold",
-        fontSize: 8.5,
-        cellPadding: 3,
-      },
+      headStyles: { fillColor: BRAND, textColor: [255,255,255], fontStyle: "bold", fontSize: 8.5, cellPadding: 3 },
       bodyStyles: { fontSize: 8.5, cellPadding: 3, textColor: BLACK },
       alternateRowStyles: { fillColor: GRAY_LIGHT },
-      footStyles: {
-        fillColor: [240, 253, 244],
-        textColor: [21, 128, 61] as [number, number, number],
-        fontStyle: "bold",
-        fontSize: 8,
-        cellPadding: 2.5,
-      },
-      columnStyles: {
-        0: { cellWidth: "auto" },
-        1: { halign: "center", cellWidth: 16 },
-        2: { halign: "right", cellWidth: 34 },
-        3: { halign: "center", cellWidth: 24 },
-        4: { halign: "right", cellWidth: 32, fontStyle: "bold" },
+      columnStyles: hasDiscount ? {
+        0: { cellWidth: 18, fontStyle: "bold", textColor: BRAND_DARK, fontSize: 7.5 },
+        2: { halign: "center", cellWidth: 14 },
+        3: { halign: "right", cellWidth: 28 },
+        4: { halign: "center", cellWidth: 18 },
+        5: { halign: "right", cellWidth: 28, fontStyle: "bold" },
+      } : {
+        0: { cellWidth: 18, fontStyle: "bold", textColor: BRAND_DARK, fontSize: 7.5 },
+        2: { halign: "center", cellWidth: 14 },
+        3: { halign: "right", cellWidth: 34 },
+        4: { halign: "right", cellWidth: 28, fontStyle: "bold" },
       },
       styles: { lineColor: GRAY_MID, lineWidth: 0.25 },
+      margin: { left: 15, right: 15 },
     });
 
     // @ts-expect-error lastAutoTable injected by plugin
     y = doc.lastAutoTable.finalY;
 
-    // Subtotal row
-    doc.setFillColor(...GRAY_LIGHT);
-    doc.setDrawColor(...GRAY_MID);
-    doc.setLineWidth(0.25);
-    doc.rect(15, y, 180, 9, "FD");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(...BRAND_DARK);
-    doc.text("Subtotal Imagenología", 20, y + 6.2);
-    doc.text(formatCLP(args.imagingTotal), 192, y + 6.2, { align: "right" });
-    y += 14;
+    if (args.imagingDiscount > 0) {
+      // Savings notice inline before subtotal
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(21, 128, 61);
+      doc.text(`Ahorro por convenio ${args.convenioLabel}: −${formatCLP(args.imagingDiscount)}`, 192, y + 4, { align: "right" });
+      y += 6;
+    }
+
+    y = subtotalBar(doc, y, "Subtotal Imagenología", args.imagingTotal);
   }
 
-  // ── Lab table ──────────────────────────────────────────────────────────────
+  // ── Laboratorio table ────────────────────────────────────────────────────────
   if (args.labItems.length > 0) {
-    y = checkPage(doc, y, 22);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    doc.setTextColor(...BRAND_DARK);
-    doc.text("EXÁMENES DE LABORATORIO", 15, y);
-    y += 4;
+    y = checkPage(doc, y, 24, "Laboratorio");
+    y = sectionLabel(doc, y, "EXÁMENES DE LABORATORIO");
 
     autoTable(doc, {
       startY: y,
       head: [["Código", "Nombre del examen", "Cant.", `Precio ${args.previsionLabel}`]],
       body: args.labItems.map(({ exam: e, qty }) => {
         const unitPrice =
-          args.previsionKey === "fa" ? (e.fonasa_a ?? e.particular) :
+          args.previsionKey === "fa"   ? (e.fonasa_a   ?? e.particular) :
           args.previsionKey === "fbcd" ? (e.fonasa_bcd ?? e.particular) :
           e.particular;
         return [
@@ -207,157 +223,149 @@ export function generateCombinedPDF(args: GenerateCombinedPDFArgs) {
         ];
       }),
       theme: "grid",
-      headStyles: {
-        fillColor: BRAND,
-        textColor: [255, 255, 255],
-        fontStyle: "bold",
-        fontSize: 8.5,
-        cellPadding: 3,
-      },
+      headStyles: { fillColor: BRAND, textColor: [255,255,255], fontStyle: "bold", fontSize: 8.5, cellPadding: 3 },
       bodyStyles: { fontSize: 8.5, cellPadding: 3, textColor: BLACK },
       alternateRowStyles: { fillColor: GRAY_LIGHT },
       columnStyles: {
-        0: { cellWidth: 24, fontStyle: "bold", fontSize: 7.5 },
-        2: { halign: "center", cellWidth: 16 },
+        0: { cellWidth: 26, fontStyle: "bold", textColor: BRAND_DARK, fontSize: 7.5 },
+        2: { halign: "center", cellWidth: 14 },
         3: { halign: "right", cellWidth: 36, fontStyle: "bold" },
       },
       styles: { lineColor: GRAY_MID, lineWidth: 0.25 },
+      margin: { left: 15, right: 15 },
     });
 
     // @ts-expect-error lastAutoTable injected by plugin
     y = doc.lastAutoTable.finalY;
 
-    doc.setFillColor(...GRAY_LIGHT);
-    doc.setDrawColor(...GRAY_MID);
-    doc.setLineWidth(0.25);
-    doc.rect(15, y, 180, 9, "FD");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(...BRAND_DARK);
-    doc.text(`Subtotal Laboratorio (${args.previsionLabel})`, 20, y + 6.2);
-    doc.text(formatCLP(args.labTotal), 192, y + 6.2, { align: "right" });
-    y += 14;
+    y = subtotalBar(doc, y, `Subtotal Laboratorio (${args.previsionLabel})`, args.labTotal);
   }
 
-  // ── Grand total ────────────────────────────────────────────────────────────
-  y = checkPage(doc, y, 22);
+  // ── Grand total — full width ─────────────────────────────────────────────────
+  y = checkPage(doc, y, 20, "Total");
   doc.setFillColor(...BRAND_DARK);
   doc.setDrawColor(...BRAND_DARK);
-  doc.rect(105, y, 90, 13, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
+  doc.rect(15, y, 180, 16, "F");
   doc.setTextColor(255, 255, 255);
-  doc.text(`TOTAL (${args.previsionLabel})`, 110, y + 5.5);
-  doc.setFontSize(13);
-  doc.text(formatCLP(args.grandTotal), 192, y + 10, { align: "right" });
-  y += 20;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text(`TOTAL A PAGAR  (${args.previsionLabel})`, 20, y + 7);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text(formatCLP(args.grandTotal), 192, y + 13, { align: "right" });
+  y += 22;
 
-  // ── Observations ──────────────────────────────────────────────────────────
+  // ── Observations ─────────────────────────────────────────────────────────────
   if (args.observations.trim()) {
-    y = checkPage(doc, y, 12);
+    y = checkPage(doc, y, 14, "Observaciones");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
     doc.setTextColor(...GRAY_TEXT);
-    doc.text("OBSERVACIONES:", 15, y);
+    doc.text("Observaciones:", 15, y);
+    y += 5;
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...BLACK);
-    const lines = doc.splitTextToSize(args.observations, 155);
-    doc.text(lines, 53, y);
-    y += lines.length * 5 + 6;
+    const obsLines = doc.splitTextToSize(args.observations, 176);
+    doc.text(obsLines, 15, y);
+    y += obsLines.length * 5 + 5;
   }
 
-  // ── Preparation ───────────────────────────────────────────────────────────
-  const prepRows = buildImagingPrepRows(args.imagingItems);
+  // ── Preparation ──────────────────────────────────────────────────────────────
+  const prepRows    = buildImagingPrepRows(args.imagingItems);
   const labPrepRows = buildLabPrepRows(args.labItems);
   const hasContrast = args.imagingItems.some((it) => hasContrastPostProtocol(it.category));
-  const hasPrepData = prepRows.length > 0 || labPrepRows.length > 0;
+  const hasAnyPrep  = prepRows.length > 0 || labPrepRows.length > 0 || hasContrast;
 
-  if (hasPrepData) {
-    y = checkPage(doc, y, 20);
-    hline(doc, y);
-    y += 6;
+  y = checkPage(doc, y, 20, "Indicaciones");
+  hline(doc, y);
+  y += 5;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...BRAND_DARK);
+  doc.text("INDICACIONES PARA EL PACIENTE", 15, y);
+  y += 6;
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    doc.setTextColor(...BRAND_DARK);
-    doc.text("PREPARACIÓN DEL PACIENTE", 15, y);
-    y += 5;
+  if (hasAnyPrep) {
+    // Combined prep table (imaging + lab)
+    const allPrepRows: [string, string, string][] = [
+      ...prepRows.map(([name, note]): [string,string,string] => ["Imagenología", name, note]),
+      ...labPrepRows.map(([name, note]): [string,string,string] => ["Laboratorio", name, note]),
+    ];
 
-    if (prepRows.length > 0) {
+    if (allPrepRows.length > 0) {
       autoTable(doc, {
         startY: y,
-        head: [["Examen", "Indicaciones previas"]],
-        body: prepRows,
+        head: [["Tipo", "Examen", "Preparación requerida"]],
+        body: allPrepRows,
         theme: "grid",
-        headStyles: { fillColor: [230, 237, 248], textColor: BRAND_DARK, fontStyle: "bold", fontSize: 8, cellPadding: 2.5 },
-        bodyStyles: { fontSize: 8, cellPadding: 2.5, textColor: GRAY_TEXT },
-        alternateRowStyles: { fillColor: [250, 251, 254] },
+        headStyles: { fillColor: [230,237,248], textColor: BRAND_DARK, fontStyle: "bold", fontSize: 8, cellPadding: 2.5 },
+        bodyStyles: { fontSize: 7.5, cellPadding: 2.5, textColor: GRAY_TEXT },
+        alternateRowStyles: { fillColor: [250,251,254] },
         columnStyles: {
-          0: { cellWidth: 60, fontStyle: "bold", textColor: BLACK },
-          1: {},
+          0: { cellWidth: 22, fontStyle: "bold", textColor: BRAND_DARK, fontSize: 7 },
+          1: { cellWidth: 58, fontStyle: "bold", textColor: BLACK },
+          2: {},
         },
-        styles: { lineColor: [215, 220, 230], lineWidth: 0.2 },
+        styles: { lineColor: [215,220,230], lineWidth: 0.2 },
+        margin: { left: 15, right: 15 },
       });
       // @ts-expect-error lastAutoTable injected by plugin
-      y = doc.lastAutoTable.finalY + 3;
+      y = doc.lastAutoTable.finalY + 4;
     }
 
-    if (labPrepRows.length > 0) {
-      autoTable(doc, {
-        startY: y,
-        head: [["Examen de laboratorio", "Indicaciones"]],
-        body: labPrepRows,
-        theme: "grid",
-        headStyles: { fillColor: [230, 237, 248], textColor: BRAND_DARK, fontStyle: "bold", fontSize: 8, cellPadding: 2.5 },
-        bodyStyles: { fontSize: 8, cellPadding: 2.5, textColor: GRAY_TEXT },
-        alternateRowStyles: { fillColor: [250, 251, 254] },
-        columnStyles: {
-          0: { cellWidth: 60, fontStyle: "bold", textColor: BLACK },
-          1: {},
-        },
-        styles: { lineColor: [215, 220, 230], lineWidth: 0.2 },
-      });
-      // @ts-expect-error lastAutoTable injected by plugin
-      y = doc.lastAutoTable.finalY + 3;
-    }
-
+    // Post-contrast note as a single block
     if (hasContrast) {
-      y = checkPage(doc, y, 10);
+      y = checkPage(doc, y, 12, "Indicaciones");
+      const postLines = doc.splitTextToSize(
+        "Post-contraste: Hidratarse con al menos 2 litros de agua al día durante 2–3 días. Si usa Metformina, consulte a su médico sobre la suspensión del medicamento. Ante cualquier reacción (dificultad respiratoria, hinchazón facial, urticaria), consulte de inmediato.",
+        176
+      );
+      doc.setFillColor(255, 252, 235);
+      doc.setDrawColor(217, 165, 30);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(15, y, 180, postLines.length * 4.8 + 8, 1.5, 1.5, "FD");
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7.5);
-      doc.setTextColor(130, 90, 10);
-      doc.text("Post-contraste: ", 15, y);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...GRAY_TEXT);
-      const cLines = doc.splitTextToSize(
-        "Hidratarse con ≥2 L de agua/día durante 2–3 días. Si usa Metformina, consulte a su médico. Ante dificultad respiratoria, hinchazón facial o urticaria, consulte de inmediato.",
-        168
-      );
-      doc.text(cLines, 44, y);
-      y += cLines.length * 4.5 + 4;
+      doc.setTextColor(120, 70, 0);
+      doc.text(postLines, 19, y + 6);
+      y += postLines.length * 4.8 + 13;
     }
-
-    // universal note
+  } else {
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    doc.setTextColor(150, 150, 150);
-    if (args.labItems.length > 0) {
-      doc.text("Lab · Toma de muestras: Lun–Vie 08:00–12:00 · Sáb 09:00–12:00", 15, y);
-      y += 5;
-    }
-    doc.text("Para todos los exámenes: traer cédula de identidad y orden médica · Llegar 15 min antes de su hora.", 15, y);
+    doc.setFontSize(8.5);
+    doc.setTextColor(...GRAY_TEXT);
+    doc.text("No se requiere preparación especial para los exámenes solicitados.", 15, y);
+    y += 7;
+  }
+
+  // Universal notes — always shown
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(130, 130, 130);
+  const universalLines: string[] = [
+    "Para todos los exámenes: traer cédula de identidad vigente y orden médica · Llegar 15 min antes de su hora.",
+  ];
+  if (args.labItems.length > 0) {
+    universalLines.push("Laboratorio · Toma de muestras: Lunes a Viernes 08:00–12:00 · Sábados 09:00–12:00");
+  }
+  for (const line of universalLines) {
+    y = checkPage(doc, y, 6, "Indicaciones");
+    doc.text(line, 15, y);
     y += 5;
   }
 
-  // ── Footer ─────────────────────────────────────────────────────────────────
-  const pageCount = (doc as any).internal.getNumberOfPages();
+  // ── Footer on every page ──────────────────────────────────────────────────────
+  const pageCount = (doc as any).internal.getNumberOfPages() as number;
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    hline(doc, 284, 15, 195, 180, 185, 195);
+    hline(doc, 284, [185, 190, 200]);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
     doc.setTextColor(170, 170, 170);
-    doc.text("Cotización referencial sujeta a confirmación · Valores pueden variar según indicación médica · DiagnoPRO Temuco", 105, 289, { align: "center" });
+    doc.text(
+      "Cotización referencial sujeta a confirmación · Valores pueden variar según indicación médica · DiagnoPRO Temuco",
+      105, 289, { align: "center" }
+    );
     if (pageCount > 1) {
       doc.text(`Pág. ${i} / ${pageCount}`, 195, 289, { align: "right" });
     }
@@ -366,7 +374,7 @@ export function generateCombinedPDF(args: GenerateCombinedPDFArgs) {
   doc.save("Cotizacion_DiagnoPRO.pdf");
 }
 
-// ── Helpers for prep rows ──────────────────────────────────────────────────────
+// ── Prep row builders ──────────────────────────────────────────────────────────
 
 function buildImagingPrepRows(items: ExamCartPDFItem[]): [string, string][] {
   const seen = new Set<string>();
@@ -381,20 +389,20 @@ function buildImagingPrepRows(items: ExamCartPDFItem[]): [string, string][] {
   return rows;
 }
 
-function buildLabPrepRows(labItems: Array<{ exam: LabExam; qty: number }>): [string, string][] {
+function buildLabPrepRows(items: Array<{ exam: LabExam; qty: number }>): [string, string][] {
   const prepLabels: Record<string, string> = {
-    orina_manana: "Primera orina de la mañana (segundo chorro). Ingresar al laboratorio en máximo 2 horas.",
-    orina_24h: "Recolección de orina de 24 horas. Desechar la primera micción; guardar el resto en el envase provisto.",
-    psa: "Abstinencia sexual de 48 horas previas.",
+    orina_manana: "Primera orina de la mañana (segundo chorro). Entregar al laboratorio en máximo 2 horas.",
+    orina_24h:    "Recolección de orina de 24 horas. Desechar la primera micción; guardar el resto en el envase provisto hasta la misma hora del día siguiente.",
+    psa:          "Abstinencia sexual de 48 horas previas al examen.",
   };
   const rows: [string, string][] = [];
-  for (const { exam } of labItems) {
+  for (const { exam } of items) {
     const notes: string[] = [];
-    if (exam.fasting) notes.push("Ayuno mínimo 8 horas, máximo 12 horas.");
+    if (exam.fasting) notes.push("Ayuno mínimo 8 horas, máximo 12 horas (sólidos y líquidos).");
     if (exam.prep && prepLabels[exam.prep]) notes.push(prepLabels[exam.prep]);
     if (notes.length > 0) {
-      const cleanName = exam.name.replace(/\*PARTICULAR\*/gi, "").replace(/\s{2,}/g, " ").trim();
-      rows.push([cleanName, notes.join(" ")]);
+      const name = exam.name.replace(/\*PARTICULAR\*/gi, "").replace(/\s{2,}/g, " ").trim();
+      rows.push([name, notes.join(" ")]);
     }
   }
   return rows;
@@ -406,61 +414,50 @@ export function generateLabIndicacionesPDF() {
   const doc = new jsPDF();
   const now = new Date();
 
-  // Header
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
+  doc.setFontSize(17);
   doc.setTextColor(...BRAND_DARK);
   doc.text("DiagnoPRO Temuco", 15, 18);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(...GRAY_TEXT);
-  doc.text("Laboratorio Clínico · Indicaciones para Pacientes", 15, 26);
+  doc.text("Laboratorio Clínico · Indicaciones para Pacientes", 15, 25);
+
   doc.setFontSize(8);
   doc.text(now.toLocaleDateString("es-CL"), 195, 18, { align: "right" });
   doc.text("Las Heras 453, esq. Av. Caupolican · Temuco", 195, 24, { align: "right" });
   doc.text("(045) 2887405 · 2887400", 195, 30, { align: "right" });
 
-  hline(doc, 34, 15, 195, ...BRAND);
-  let y = 42;
+  hline(doc, 33, BRAND, 0.5);
+  let y = 41;
 
   // Horario
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(...BRAND_DARK);
-  doc.text("HORARIO DE TOMA DE MUESTRAS", 15, y);
-  y += 5;
-
+  y = sectionLabel(doc, y, "HORARIO DE TOMA DE MUESTRAS");
   autoTable(doc, {
     startY: y,
     head: [["Día", "Horario"]],
     body: [
       ["Lunes a Viernes", "08:00 – 10:30 hrs"],
-      ["Sábados", "09:00 – 10:30 hrs"],
+      ["Sábados",         "09:00 – 10:30 hrs"],
     ],
     theme: "grid",
-    headStyles: { fillColor: BRAND, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: BRAND, textColor: [255,255,255], fontStyle: "bold", fontSize: 9, cellPadding: 3 },
     bodyStyles: { fontSize: 10, cellPadding: 4, textColor: BLACK },
     columnStyles: { 0: { cellWidth: 80 }, 1: { fontStyle: "bold" } },
     styles: { lineColor: GRAY_MID, lineWidth: 0.25 },
-    tableWidth: 100,
+    tableWidth: 110,
   });
-
   // @ts-expect-error lastAutoTable injected by plugin
-  y = doc.lastAutoTable.finalY + 10;
+  y = doc.lastAutoTable.finalY + 9;
 
   // Ayuno
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(...BRAND_DARK);
-  doc.text("AYUNO REQUERIDO", 15, y);
-  y += 5;
-
+  y = sectionLabel(doc, y, "AYUNO REQUERIDO");
   autoTable(doc, {
     startY: y,
     body: [
-      ["Mínimo", "8 horas"],
-      ["Máximo", "12 horas (no exceder)"],
-      ["Última colación recomendada", "23:00 hrs del día anterior"],
+      ["Mínimo",                          "8 horas"],
+      ["Máximo",                          "12 horas (no exceder)"],
+      ["Última colación recomendada",     "23:00 hrs del día anterior"],
     ],
     theme: "grid",
     bodyStyles: { fontSize: 9.5, cellPadding: 3.5, textColor: BLACK },
@@ -468,9 +465,8 @@ export function generateLabIndicacionesPDF() {
     styles: { lineColor: GRAY_MID, lineWidth: 0.25 },
     tableWidth: 130,
   });
-
   // @ts-expect-error lastAutoTable injected by plugin
-  y = doc.lastAutoTable.finalY + 6;
+  y = doc.lastAutoTable.finalY + 5;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
@@ -480,39 +476,28 @@ export function generateLabIndicacionesPDF() {
     175
   );
   doc.text(warnLines, 15, y);
-  y += warnLines.length * 5 + 8;
+  y += warnLines.length * 5 + 9;
 
   // Indicaciones específicas
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(...BRAND_DARK);
-  doc.text("INDICACIONES ESPECÍFICAS", 15, y);
-  y += 5;
-
+  y = sectionLabel(doc, y, "INDICACIONES ESPECÍFICAS");
   autoTable(doc, {
     startY: y,
     head: [["Examen", "Indicación"]],
     body: [
-      ["Examen de Orina", "Recolectar la primera orina de la mañana (segundo chorro). Ingresar al laboratorio en máximo 2 horas."],
+      ["Examen de Orina",         "Recolectar la primera orina de la mañana (segundo chorro). Ingresar al laboratorio en máximo 2 horas."],
       ["Antígeno Prostático (PSA)", "Abstinencia sexual de 48 horas previas al examen."],
     ],
     theme: "grid",
-    headStyles: { fillColor: BRAND, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: BRAND, textColor: [255,255,255], fontStyle: "bold", fontSize: 9, cellPadding: 3 },
     bodyStyles: { fontSize: 9, cellPadding: 3.5, textColor: BLACK },
     columnStyles: { 0: { cellWidth: 70, fontStyle: "bold" } },
     styles: { lineColor: GRAY_MID, lineWidth: 0.25 },
   });
-
   // @ts-expect-error lastAutoTable injected by plugin
-  y = doc.lastAutoTable.finalY + 10;
+  y = doc.lastAutoTable.finalY + 9;
 
   // Documentos
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(...BRAND_DARK);
-  doc.text("DOCUMENTOS REQUERIDOS", 15, y);
-  y += 5;
-
+  y = sectionLabel(doc, y, "DOCUMENTOS REQUERIDOS");
   autoTable(doc, {
     startY: y,
     body: [
@@ -524,16 +509,18 @@ export function generateLabIndicacionesPDF() {
     styles: { lineColor: GRAY_MID, lineWidth: 0.25 },
     tableWidth: 120,
   });
-
   // @ts-expect-error lastAutoTable injected by plugin
   y = doc.lastAutoTable.finalY + 10;
 
-  hline(doc, y, 15, 195, 180, 185, 195);
+  hline(doc, y, [185, 190, 200]);
   y += 6;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(160, 160, 160);
-  doc.text("DiagnoPRO Temuco · www.diagnopro.cl · Las Heras 453, esq. Av. Caupolican · (045) 2887405 – 2887400", 105, y, { align: "center" });
+  doc.text(
+    "DiagnoPRO Temuco · www.diagnopro.cl · Las Heras 453, esq. Av. Caupolican · (045) 2887405 – 2887400",
+    105, y, { align: "center" }
+  );
 
   doc.save("Indicaciones_Laboratorio_DiagnoPRO.pdf");
 }
@@ -575,7 +562,7 @@ export function generateLabPDF(args: {
 }) {
   const previsionKey =
     args.prevision === "FONASA A" ? "fa" :
-    args.prevision.includes("B") ? "fbcd" : "particular";
+    args.prevision.includes("B")  ? "fbcd" : "particular";
   generateCombinedPDF({
     imagingItems: [],
     labItems: args.items.map((exam) => ({ exam, qty: 1 })),
