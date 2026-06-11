@@ -48,3 +48,9 @@ id = "ToA62x5l1UEl5OK6DtAME"
 uri = "file://diagnopro-dist.zip"
 type = "unspecified"
 title = "diagnopro-dist.zip — Build para Cloudflare"
+
+[[outputs]]
+id = "_2YJkqj_HXUzAiEyrqCyz"
+uri = "file://dist.zip"
+type = "unspecified"
+title = "dist.zip — Build estático para Cloudflare Pages"
