@@ -17,6 +17,7 @@ import { formatCLP } from "@/lib/format";
 import { generateCombinedPDF, type ExamCartPDFItem } from "@/lib/pdf";
 import { usePriceOverrides } from "@/hooks/usePriceOverrides";
 import { PriceEditor } from "@/components/PriceEditor";
+import { ThemePicker } from "@/components/ThemePicker";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -178,9 +179,7 @@ function Index() {
               <p className="text-xs text-muted-foreground">Imagenología · Laboratorio · Caja</p>
             </div>
           </div>
-          <span className="rounded-full bg-secondary px-3 py-1 text-[11px] font-semibold text-secondary-foreground">
-            Temuco
-          </span>
+          <ThemePicker />
         </div>
       </header>
 
