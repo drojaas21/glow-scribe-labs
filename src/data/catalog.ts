@@ -32,6 +32,8 @@ export type LabExam = {
   particular: number;
   obs: string;
   prep?: "orina_manana" | "orina_24h" | "psa";
+  turnaround?: "same_day" | "24h" | "2_5d" | "5_15d";
+  fasting?: true;
 };
 
 export const examDatabase = examsJson as Record<ExamCategory, Exam[]>;

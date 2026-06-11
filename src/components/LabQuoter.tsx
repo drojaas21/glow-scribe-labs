@@ -2,7 +2,7 @@ import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import {
   Search, X, Plus, Minus, FlaskConical, Check,
   Layers, AlertCircle, ChevronDown, Hash, FileText,
-  Droplets, Clock, ShieldAlert, ChevronUp, Timer,
+  Droplets, Clock, ShieldAlert, ChevronUp, Timer, Utensils,
 } from "lucide-react";
 import { labDatabase, type LabExam } from "@/data/catalog";
 import { labProfiles, type LabProfile } from "@/data/profiles";
@@ -376,6 +376,33 @@ function PrepBadge({ type }: { type: "orina_manana" | "orina_24h" | "psa" }) {
   );
 }
 
+const turnaroundMeta: Record<string, { label: string; badge: string; dot: string }> = {
+  same_day: { label: "Mismo día",     badge: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300", dot: "bg-emerald-400" },
+  "24h":    { label: "24 h",          badge: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",             dot: "bg-blue-400"    },
+  "2_5d":   { label: "2–5 días",      badge: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",         dot: "bg-amber-400"   },
+  "5_15d":  { label: "5–15 días",     badge: "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300",             dot: "bg-rose-400"    },
+};
+
+function TurnaroundBadge({ type }: { type: string }) {
+  const m = turnaroundMeta[type];
+  if (!m) return null;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${m.badge}`}>
+      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${m.dot}`} />
+      {m.label}
+    </span>
+  );
+}
+
+function FastingBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-800 dark:bg-orange-900/40 dark:text-orange-300">
+      <Utensils className="h-2.5 w-2.5 shrink-0" />
+      Ayuno
+    </span>
+  );
+}
+
 function PrepPanel() {
   const [open, setOpen] = useState(true);
   return (
@@ -559,7 +586,13 @@ function ExamList({
                   </span>
                 )}
               </div>
-              {e.prep && <PrepBadge type={e.prep} />}
+              {(e.prep || e.turnaround || e.fasting) && (
+                <span className="mt-1.5 flex flex-wrap gap-1">
+                  {e.turnaround && <TurnaroundBadge type={e.turnaround} />}
+                  {e.fasting && <FastingBadge />}
+                  {e.prep && <PrepBadge type={e.prep} />}
+                </span>
+              )}
             </div>
 
             {inCart && !blocked ? (
