@@ -147,7 +147,7 @@ export function StudyMode() {
           <div>
             <h2 className="text-lg font-bold text-foreground">Capacitación Interna · DiagnoPRO Temuco</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Fichas técnicas educativas para personal técnico y administrativo. Fuentes: Clínica Mayo, RSNA, Manuales MSD.
+              Fichas técnicas educativas para personal técnico y administrativo.
             </p>
             <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5"><Scan className="h-3.5 w-3.5 text-blue-500" /> {studyCards.filter((c) => c.type === "imaging").length} exámenes de imagenología</span>
